@@ -1,7 +1,6 @@
 // src/App.tsx
 import React from "react";
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
@@ -55,7 +54,6 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
         <Routes>
           <Route path="/" element={<Navigate to="/admin/dashboard" />} />
           <Route
@@ -105,7 +103,7 @@ function App() {
           {/* Add more routes as we build them */}
           <Route path="*" element={<Navigate to="/admin/dashboard" />} />
         </Routes>
-      </Router>
+      
     </AuthProvider>
   );
 }
