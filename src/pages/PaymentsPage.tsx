@@ -6,6 +6,7 @@ import { PaymentSearch } from "../components/Payments/PaymentSearch";
 import { paymentService } from "../services/admin.service";
 import { useAuth } from "../contexts/useAuth";
 import { CreateManualPayment } from "../components/Payments/CreateManualPayment";
+import type { PaginatedResponse, Payment } from "../types/admin.types";
 
 export const PaymentsPage: React.FC = () => {
   const { hasPermission } = useAuth();

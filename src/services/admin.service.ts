@@ -122,7 +122,16 @@ export const adminManagementService = {
     const response = await axios.patch(`/admin/management/admins/${id}/toggle`);
     return response.data;
   },
+
+  updateAdmin: async (id: string, updatedData: Partial<Admin>) => {
+    const response = await axios.put(
+      `/admin/management/admins/${id}`,
+      updatedData
+    );
+    return response.data;
+  },
 };
+
 
 // Receipt services
 export const receiptService = {

@@ -1,7 +1,7 @@
 // Update src/components/Layout/AdminLayout.tsx
 import React, { useState } from "react";
 
-import { Link, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/useAuth";
 
 interface AdminLayoutProps {
@@ -9,9 +9,13 @@ interface AdminLayoutProps {
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { admin, logout, hasPermission, isRole } = useAuth();
+  const { admin, logout, hasPermission } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  if (!admin) {
+    return <Navigate to="/admin/login" />;
+  }
 
 const navigation = [
   { name: "Dashboard", href: "/admin/dashboard", icon: "📊" },
