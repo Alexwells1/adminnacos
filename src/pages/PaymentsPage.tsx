@@ -131,12 +131,18 @@ export const PaymentsPage: React.FC = () => {
   };
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Payment Management</h1>
-        <p className="text-gray-600">View and manage all payment records</p>
+    <div className="p-4 sm:p-6 lg:p-8">
+      {/* Header Section */}
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">
+          Payment Management
+        </h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
+          View and manage all payment records
+        </p>
       </div>
 
+      {/* Manual Payment Creation */}
       <CreateManualPayment onPaymentCreated={loadPayments} />
 
       {/* Search */}
@@ -160,42 +166,58 @@ export const PaymentsPage: React.FC = () => {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-xs sm:text-sm text-gray-700 text-center sm:text-left">
             Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
             {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
             {pagination.total} results
           </div>
 
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             <button
               onClick={() => handlePageChange(pagination.page - 1)}
               disabled={pagination.page === 1}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-md disabled:opacity-50"
+              className="px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Previous
             </button>
 
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(
-              (page) => (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page)}
-                  className={`px-3 py-2 text-sm border rounded-md ${
-                    page === pagination.page
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "border-gray-300 text-gray-700"
-                  }`}
-                >
-                  {page}
-                </button>
-              )
-            )}
+            <div className="flex flex-wrap items-center justify-center gap-1">
+              {Array.from(
+                { length: Math.min(5, pagination.totalPages) },
+                (_, i) => {
+                  let pageNum;
+                  if (pagination.totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (pagination.page <= 3) {
+                    pageNum = i + 1;
+                  } else if (pagination.page >= pagination.totalPages - 2) {
+                    pageNum = pagination.totalPages - 4 + i;
+                  } else {
+                    pageNum = pagination.page - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`min-w-[2.5rem] px-2 sm:px-3 py-2 text-xs sm:text-sm border rounded-md transition-colors ${
+                        pageNum === pagination.page
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                }
+              )}
+            </div>
 
             <button
               onClick={() => handlePageChange(pagination.page + 1)}
               disabled={pagination.page === pagination.totalPages}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-md disabled:opacity-50"
+              className="px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Next
             </button>

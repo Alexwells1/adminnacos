@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { paymentService } from "../../services/admin.service";
 import { useAuth } from "../../contexts/useAuth";
 
-
 interface CreateManualPaymentProps {
   onPaymentCreated: () => void;
   defaultType?: "college" | "departmental";
@@ -103,31 +102,31 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
   }
 
   return (
-    <div className="mb-6">
+    <div className="mb-4 sm:mb-6">
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center transition-colors text-sm sm:text-base"
         >
           <span className="mr-2">+</span>
           Create Manual Payment
         </button>
       ) : (
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
             Create Manual Payment
           </h3>
 
           {error && (
-            <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-3 rounded-lg text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* Full Name */}
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Full Name *
                 </label>
@@ -137,13 +136,13 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, fullName: e.target.value })
                   }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   required
                 />
               </div>
 
               {/* Matric Number */}
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Matric Number *
                 </label>
@@ -156,13 +155,13 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                       matricNumber: e.target.value.toUpperCase(),
                     })
                   }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   required
                 />
               </div>
 
               {/* Department */}
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Department
                 </label>
@@ -172,7 +171,7 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, department: e.target.value })
                   }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   required
                 />
               </div>
@@ -187,7 +186,7 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, level: e.target.value })
                   }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   required
                 >
                   <option value="100">100</option>
@@ -209,7 +208,7 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, amount: e.target.value })
                   }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   placeholder="0.00"
                   step="0.01"
                   required
@@ -226,7 +225,7 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, type: e.target.value as any })
                   }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   required
                 >
                   {allowedTypes.map((type) => (
@@ -248,7 +247,7 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 />
               </div>
 
@@ -263,7 +262,7 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, phoneNumber: e.target.value })
                   }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 />
               </div>
             </div>
@@ -298,7 +297,7 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                     onChange={(e) =>
                       setFormData({ ...formData, scope: e.target.value })
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   >
                     <option value="college">College Wide</option>
                     <option value="departmental">Departmental</option>
@@ -310,18 +309,18 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors order-2 sm:order-1"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors order-1 sm:order-2"
               >
                 {loading ? "Creating..." : "Create Payment"}
               </button>

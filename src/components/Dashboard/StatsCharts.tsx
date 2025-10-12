@@ -19,22 +19,22 @@ export const StatsCharts: React.FC<StatsChartsProps> = ({ stats }) => {
     );
 
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
           Revenue by Type
         </h3>
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {collegeData && (
             <div>
-              <div className="flex justify-between text-sm mb-1">
+              <div className="flex justify-between text-xs sm:text-sm mb-1">
                 <span className="text-gray-600">College Payments</span>
                 <span className="font-medium">
                   ₦{collegeData.revenue.toLocaleString()}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
                 <div
-                  className="bg-blue-600 h-2 rounded-full"
+                  className="bg-blue-600 h-2 sm:h-3 rounded-full transition-all duration-500"
                   style={{
                     width: `${
                       (collegeData.revenue /
@@ -52,15 +52,15 @@ export const StatsCharts: React.FC<StatsChartsProps> = ({ stats }) => {
 
           {deptData && (
             <div>
-              <div className="flex justify-between text-sm mb-1">
+              <div className="flex justify-between text-xs sm:text-sm mb-1">
                 <span className="text-gray-600">Departmental Payments</span>
                 <span className="font-medium">
                   ₦{deptData.revenue.toLocaleString()}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
                 <div
-                  className="bg-green-600 h-2 rounded-full"
+                  className="bg-green-600 h-2 sm:h-3 rounded-full transition-all duration-500"
                   style={{
                     width: `${
                       (deptData.revenue /
@@ -85,22 +85,22 @@ export const StatsCharts: React.FC<StatsChartsProps> = ({ stats }) => {
     if (!stats.levelBreakdown?.length) return null;
 
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
           Payments by Level
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {stats.levelBreakdown.map((level) => (
             <div key={level._id}>
-              <div className="flex justify-between text-sm mb-1">
+              <div className="flex justify-between text-xs sm:text-sm mb-1">
                 <span className="text-gray-600">Level {level._id}</span>
                 <span className="font-medium">
                   ₦{level.revenue.toLocaleString()}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
                 <div
-                  className="bg-purple-600 h-2 rounded-full"
+                  className="bg-purple-600 h-2 sm:h-3 rounded-full transition-all duration-500"
                   style={{
                     width: `${
                       (level.count /
@@ -130,22 +130,24 @@ export const StatsCharts: React.FC<StatsChartsProps> = ({ stats }) => {
     const topDepartments = stats.departmentBreakdown.slice(0, 5);
 
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
           Top Departments
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {topDepartments.map((dept) => (
             <div key={dept._id}>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">{dept._id || "Unknown"}</span>
-                <span className="font-medium">
+              <div className="flex justify-between text-xs sm:text-sm mb-1">
+                <span className="text-gray-600 truncate">
+                  {dept._id || "Unknown"}
+                </span>
+                <span className="font-medium ml-2">
                   ₦{dept.revenue.toLocaleString()}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
                 <div
-                  className="bg-orange-600 h-2 rounded-full"
+                  className="bg-orange-600 h-2 sm:h-3 rounded-full transition-all duration-500"
                   style={{
                     width: `${
                       (dept.revenue /
@@ -173,22 +175,22 @@ export const StatsCharts: React.FC<StatsChartsProps> = ({ stats }) => {
     const regularData = stats.executiveVsRegular.find((d) => d._id === false);
 
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
           Executive vs Regular
         </h3>
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {executiveData && (
             <div>
-              <div className="flex justify-between text-sm mb-1">
+              <div className="flex justify-between text-xs sm:text-sm mb-1">
                 <span className="text-gray-600">Executive Payments</span>
                 <span className="font-medium">
                   ₦{executiveData.revenue.toLocaleString()}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
                 <div
-                  className="bg-indigo-600 h-2 rounded-full"
+                  className="bg-indigo-600 h-2 sm:h-3 rounded-full transition-all duration-500"
                   style={{
                     width: `${
                       (executiveData.count /
@@ -207,15 +209,15 @@ export const StatsCharts: React.FC<StatsChartsProps> = ({ stats }) => {
 
           {regularData && (
             <div>
-              <div className="flex justify-between text-sm mb-1">
+              <div className="flex justify-between text-xs sm:text-sm mb-1">
                 <span className="text-gray-600">Regular Payments</span>
                 <span className="font-medium">
                   ₦{regularData.revenue.toLocaleString()}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
                 <div
-                  className="bg-gray-600 h-2 rounded-full"
+                  className="bg-gray-600 h-2 sm:h-3 rounded-full transition-all duration-500"
                   style={{
                     width: `${
                       (regularData.count /
@@ -236,7 +238,7 @@ export const StatsCharts: React.FC<StatsChartsProps> = ({ stats }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8 lg:mb-10">
       {renderCollegeVsDeptChart()}
       {renderLevelBreakdown()}
       {renderDepartmentBreakdown()}
