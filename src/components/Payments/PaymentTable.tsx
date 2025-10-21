@@ -86,6 +86,7 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
   };
 
   const canDeletePayment = (payment: Payment): boolean => {
+    console.log("delete ", payment);
     return admin?.role === "super_admin";
   };
 
@@ -269,28 +270,26 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
     });
   };
 
- const DEPARTMENTS = [
-   { value: "Computer Science", label: "Computer Science (COMSSA)" },
-   {
-     value: "Software Engr & Information Systems",
-     label: "Software Engineering (SENIFSA)",
-   },
-   { value: "Cybersecurity & Data Science", label: "Cyber Security (CYDASA)" },
-   {
-     value: "ICT & Information Technology",
-     label: "Information Technology (ICITSA)",
-   },
- ];
+  const DEPARTMENTS = [
+    { value: "Computer Science", label: "Computer Science (COMSSA)" },
+    {
+      value: "Software Engr & Information Systems",
+      label: "Software Engineering (SENIFSA)",
+    },
+    { value: "Cybersecurity & Data Science", label: "Cyber Security (CYDASA)" },
+    {
+      value: "ICT & Information Technology",
+      label: "Information Technology (ICITSA)",
+    },
+  ];
 
-
-
- const LEVELS = [
-   { value: "100", label: "Level 100" },
-   { value: "200", label: "Level 200" },
-   { value: "200 D.E", label: "Level 200 D.E" },
-   { value: "300", label: "Level 300" },
-   { value: "400", label: "Level 400" },
- ];
+  const LEVELS = [
+    { value: "100", label: "Level 100" },
+    { value: "200", label: "Level 200" },
+    { value: "200 D.E", label: "Level 200 D.E" },
+    { value: "300", label: "Level 300" },
+    { value: "400", label: "Level 400" },
+  ];
 
   if (loading) {
     return (

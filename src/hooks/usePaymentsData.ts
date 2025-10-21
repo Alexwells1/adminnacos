@@ -65,7 +65,9 @@ const searchPayments = (payments: Payment[], query: string): Payment[] => {
 export const usePaymentsData = () => {
   // ALL HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP LEVEL
   const { admin, hasPermission } = useAuth();
-  const { saveToCache, clearPaymentsCache } = usePaymentsCache(); // FIX: Remove unused CACHE_KEYS and getFromCache
+  const {  clearPaymentsCache } = usePaymentsCache(); 
+
+
 
   // State declarations - ALL AT TOP LEVEL
   const [allPayments, setAllPayments] = useState<Payment[]>([]);
@@ -256,29 +258,7 @@ export const usePaymentsData = () => {
     []
   );
 
-  // FIX: Remove unused safeSaveToCache function since it's declared but never used
-  /*
-  const safeSaveToCache = useCallback(
-    (key: string, data: any) => {
-      try {
-        saveToCache(key, data);
-      } catch (error) {
-        console.warn("Cache quota exceeded, clearing and retrying...");
-        try {
-          // Clear some cache and try again
-          clearPaymentsCache();
-          saveToCache(key, data);
-        } catch (retryError) {
-          console.error(
-            "Failed to save to cache even after clearing:",
-            retryError
-          );
-        }
-      }
-    },
-    [saveToCache, clearPaymentsCache]
-  );
-  */
+
 
   // Function to fetch ALL payments from API (multiple pages if needed)
   const fetchAllPayments = useCallback(
