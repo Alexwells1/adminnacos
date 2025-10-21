@@ -265,8 +265,9 @@ export interface ApiResponse<T> {
 }
 
 export interface LoginResponse {
+  message: string;
   admin: Admin;
-  token: string;
+  token: string; 
 }
 
 export interface StatsResponse {
