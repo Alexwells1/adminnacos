@@ -1,19 +1,31 @@
 // src/App.tsx
 import React from "react";
-import {
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { useAuth } from "./contexts/useAuth";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AdminLogin } from "./pages/AdminLogin";
-
 import { AdminLayout } from "./components/Layout/AdminLayout";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { PaymentsPage } from "./pages/PaymentsPage";
 import { ExecutivesPage } from "./pages/ExecutivesPage";
 import { AdminManagementPage } from "./components/AdminManagement/AdminManagementPage";
+import { ExpenseManagement } from "./pages/ExpenseManagement";
+import { AuthProvider } from "./contexts/useAuthcont";
+import { CacheProvider } from "./contexts/useCache";
+import { useAuth } from "./contexts/useAuth";
+import { Toaster } from "sonner";
+
+// Route persistence component
+const RoutePersist: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const location = useLocation();
+
+  // Store current route in sessionStorage
+  React.useEffect(() => {
+    sessionStorage.setItem("lastRoute", location.pathname);
+  }, [location]);
+
+  return <>{children}</>;
+};
 
 // Protected Route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -53,58 +65,73 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Navigate to="/admin/dashboard" />} />
-          <Route
-            path="/admin/login"
-            element={
-              <PublicRoute>
-                <AdminLogin />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
+    <>
+      <AuthProvider>
+        <CacheProvider>
+          <RoutePersist>
+            <Routes>
+              <Route path="/" element={<Navigate to="/admin/dashboard" />} />
+              <Route
+                path="/admin/login"
+                element={
+                  <PublicRoute>
+                    <AdminLogin />
+                  </PublicRoute>
+                }
+              />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-          <Route
-            path="/admin/payments"
-            element={
-              <ProtectedRoute>
-                <PaymentsPage />
-              </ProtectedRoute>
-            }
-          />
+              <Route
+                path="/admin/payments"
+                element={
+                  <ProtectedRoute>
+                    <PaymentsPage />
+                  </ProtectedRoute>
+                }
+              />
 
-          <Route
-            path="/admin/executives"
-            element={
-              <ProtectedRoute>
-                <ExecutivesPage />
-              </ProtectedRoute>
-            }
-          />
+              <Route
+                path="/admin/executives"
+                element={
+                  <ProtectedRoute>
+                    <ExecutivesPage />
+                  </ProtectedRoute>
+                }
+              />
 
-          <Route
-            path="/admin/management"
-            element={
-              <ProtectedRoute>
-                <AdminManagementPage />
-              </ProtectedRoute>
-            }
-          />
+              <Route
+                path="/admin/management"
+                element={
+                  <ProtectedRoute>
+                    <AdminManagementPage />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Add more routes as we build them */}
-          <Route path="*" element={<Navigate to="/admin/dashboard" />} />
-        </Routes>
-      
-    </AuthProvider>
+              <Route
+                path="/admin/expenses"
+                element={
+                  <ProtectedRoute>
+                    <ExpenseManagement />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Add more routes as we build them */}
+              <Route path="*" element={<Navigate to="/admin/dashboard" />} />
+            </Routes>
+          </RoutePersist>
+        </CacheProvider>
+      </AuthProvider>
+      <Toaster position="top-right" />
+    </>
   );
 }
 

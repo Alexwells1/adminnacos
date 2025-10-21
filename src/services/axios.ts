@@ -1,10 +1,12 @@
 // src/lib/axios.ts
 import axios from "axios";
 
+const BASE_URL = "http://localhost:5000/api";
+
 const instance = axios.create({
-  baseURL:"http://localhost:5000/api",
+  baseURL: BASE_URL,
   withCredentials: true,
-  timeout: 30000, // 30 seconds
+  timeout: 30000, 
 });
 
 // Request interceptor - add auth token

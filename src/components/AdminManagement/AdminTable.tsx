@@ -1,471 +1,381 @@
-// src/components/AdminManagement/AdminTable.tsx
+// src/components/admin/AdminManagementTable.tsx
 import React, { useState } from "react";
+import type { Admin } from "../../services/admin.service";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
+import {
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Shield,
+  Building,
+  GraduationCap,
+  UserCog,
+  UserX,
+  UserCheck,
+  Mail,
+  Users,
+  Key,
+} from "lucide-react";
+import { Skeleton } from "../ui/skeleton";
 
 import { adminManagementService } from "../../services/admin.service";
-import { useAuth } from "../../contexts/useAuth";
-import type { Admin } from "../../types/admin.types";
+import { toast } from "sonner";
+import { EditAdminForm } from "./EditAdminForm";
+import { ChangePasswordDialog } from "./ChangePasswordDialog";
 
 
-interface AdminTableProps {
+interface AdminManagementTableProps {
   admins: Admin[];
   loading: boolean;
-  onAdminUpdate: () => void;
+  currentAdminId?: string;
+  onAdminUpdated: () => void;
+  onAdminDeleted: () => void;
+  onStatusToggle: () => void;
+  onRefetch: () => void;
 }
 
-export const AdminTable: React.FC<AdminTableProps> = ({
+export const AdminManagementTable: React.FC<AdminManagementTableProps> = ({
   admins,
   loading,
-  onAdminUpdate,
+  currentAdminId,
+  onAdminUpdated,
+  onAdminDeleted,
+  onStatusToggle,
+  onRefetch,
 }) => {
-  const { admin: currentAdmin } = useAuth();
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
+  const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
+  const [deletingAdmin, setDeletingAdmin] = useState<Admin | null>(null);
+  const [togglingAdmin, setTogglingAdmin] = useState<Admin | null>(null);
+  const [changingPasswordAdmin, setChangingPasswordAdmin] =
+    useState<Admin | null>(null);
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case "super_admin":
+        return <Shield className="h-4 w-4" />;
+      case "college_admin":
+        return <Building className="h-4 w-4" />;
+      case "dept_admin":
+        return <GraduationCap className="h-4 w-4" />;
+      default:
+        return <UserCog className="h-4 w-4" />;
+    }
+  };
+
+  const getRoleBadge = (role: string) => {
+    const variants = {
+      super_admin: "bg-purple-100 text-purple-800 border-purple-200",
+      director_finance: "bg-blue-100 text-blue-800 border-blue-200",
+      college_admin: "bg-green-100 text-green-800 border-green-200",
+      dept_admin: "bg-orange-100 text-orange-800 border-orange-200",
+      general_admin: "bg-gray-100 text-gray-800 border-gray-200",
+    };
+
+    return (
+      <Badge
+        variant="outline"
+        className={`capitalize ${variants[role as keyof typeof variants]}`}
+      >
+        <span className="flex items-center gap-1">
+          {getRoleIcon(role)}
+          {role.replace("_", " ")}
+        </span>
+      </Badge>
+    );
+  };
 
   const handleToggleStatus = async (admin: Admin) => {
-    setActionLoading(`toggle-${admin._id}`);
     try {
       await adminManagementService.toggleAdminStatus(admin._id);
-      onAdminUpdate();
+      onStatusToggle();
+      toast.success(
+        `Admin ${admin.isActive ? "deactivated" : "activated"} successfully`
+      );
     } catch (error: any) {
       console.error("Failed to toggle admin status:", error);
-      alert(error.response?.data?.message || "Failed to update admin status");
+      toast.error("Failed to update admin status");
     } finally {
-      setActionLoading(null);
+      setTogglingAdmin(null);
     }
   };
 
-  const handleEdit = (admin: Admin) => {
-    setSelectedAdmin(admin);
-    setShowEditModal(true);
-  };
-
-  const handleUpdateAdmin = async (updates: any) => {
-    if (!selectedAdmin) return;
-
-    setActionLoading("update");
+  const handleDeleteAdmin = async (admin: Admin) => {
     try {
-      await adminManagementService.updateAdmin(selectedAdmin._id, updates);
-      setShowEditModal(false);
-      setSelectedAdmin(null);
-      onAdminUpdate();
+      await adminManagementService.deleteAdmin(admin._id);
+      onAdminDeleted();
+      toast.success("Admin deleted successfully");
     } catch (error: any) {
-      console.error("Failed to update admin:", error);
-      alert(error.response?.data?.message || "Failed to update admin");
+      console.error("Failed to delete admin:", error);
+      toast.error("Failed to delete admin");
     } finally {
-      setActionLoading(null);
+      setDeletingAdmin(null);
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    const colors: { [key: string]: string } = {
-      super_admin: "bg-red-100 text-red-800",
-      college_admin: "bg-blue-100 text-blue-800",
-      dept_admin: "bg-green-100 text-green-800",
-      general_admin: "bg-gray-100 text-gray-800",
-    };
-    return colors[role] || "bg-gray-100 text-gray-800";
-  };
-
-  const getStatusBadge = (admin: Admin) => {
-    if (!admin.isActive) {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          Inactive
-        </span>
-      );
+  const handlePasswordChange = async (adminId: string, newPassword: string) => {
+    try {
+      await adminManagementService.changeAdminPassword(adminId, newPassword);
+      toast.success("Password changed successfully");
+      setChangingPasswordAdmin(null);
+    } catch (error: any) {
+      console.error("Failed to change password:", error);
+      toast.error(error.response?.data?.message || "Failed to change password");
+      throw error; // Re-throw to let the dialog handle it
     }
-    return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-        Active
-      </span>
-    );
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-32">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center space-x-4">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-4 w-1/4" />
+              <Skeleton className="h-3 w-1/3" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="bg-white shadow-sm rounded-lg border">
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Admin
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role & Department
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Permissions
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {admins.map((admin) => (
-              <tr key={admin._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">
-                      {admin.name}
+    <>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Admin</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Department</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="w-0">
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {admins.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-8 text-muted-foreground"
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <Users className="h-8 w-8" />
+                    <p>No administrators found</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              admins.map((admin) => (
+                <TableRow key={admin._id}>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <div className="font-medium">{admin.name}</div>
+                      <div className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Mail className="h-3 w-3" />
+                        {admin.email}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-500">{admin.email}</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
-                        admin.role
-                      )}`}
-                    >
-                      {admin.role.replace("_", " ")}
-                    </span>
-                  </div>
-                  {admin.department && (
-                    <div className="text-sm text-gray-500 mt-1">
-                      {admin.department}
+                  </TableCell>
+                  <TableCell>{getRoleBadge(admin.role)}</TableCell>
+                  <TableCell>
+                    {admin.department ? (
+                      <Badge variant="secondary" className="capitalize">
+                        {admin.department}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={admin.isActive ? "default" : "secondary"}>
+                      {admin.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(admin.createdAt).toLocaleDateString()}
                     </div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {getStatusBadge(admin)}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-500 space-y-1">
-                    {admin.permissions.canViewPayments && (
-                      <div>• View Payments</div>
-                    )}
-                    {admin.permissions.canExportData && (
-                      <div>• Export Data</div>
-                    )}
-                    {admin.permissions.canManageAdmins && (
-                      <div>• Manage Admins</div>
-                    )}
-                    {admin.permissions.canViewAnalytics && (
-                      <div>• View Analytics</div>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex space-x-3">
-                    {/* Edit Button - Only for super admin or self */}
-                    {(currentAdmin?._id === admin._id ||
-                      currentAdmin?.role === "super_admin") && (
-                      <button
-                        onClick={() => handleEdit(admin)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        Edit
-                      </button>
-                    )}
-
-                    {/* Toggle Status - Only for super admin and not self */}
-                    {currentAdmin?.role === "super_admin" &&
-                      currentAdmin._id !== admin._id && (
-                        <button
-                          onClick={() => handleToggleStatus(admin)}
-                          disabled={actionLoading === `toggle-${admin._id}`}
-                          className={`${
-                            admin.isActive
-                              ? "text-orange-600 hover:text-orange-900"
-                              : "text-green-600 hover:text-green-900"
-                          } disabled:opacity-50`}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem
+                          onClick={() => setEditingAdmin(admin)}
                         >
-                          {actionLoading === `toggle-${admin._id}`
-                            ? "..."
-                            : admin.isActive
-                            ? "Deactivate"
-                            : "Activate"}
-                        </button>
-                      )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={() => setChangingPasswordAdmin(admin)}
+                          disabled={admin._id === currentAdminId}
+                        >
+                          <Key className="h-4 w-4 mr-2" />
+                          Change Password
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                          onClick={() => setTogglingAdmin(admin)}
+                          disabled={admin._id === currentAdminId}
+                        >
+                          {admin.isActive ? (
+                            <>
+                              <UserX className="h-4 w-4 mr-2" />
+                              Deactivate
+                            </>
+                          ) : (
+                            <>
+                              <UserCheck className="h-4 w-4 mr-2" />
+                              Activate
+                            </>
+                          )}
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                          onClick={() => setDeletingAdmin(admin)}
+                          disabled={admin._id === currentAdminId}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
-      {/* Empty State */}
-      {admins.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-gray-400 text-lg">No admins found</div>
-          <div className="text-gray-500 mt-2">
-            Register new admins to manage the system
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {showEditModal && selectedAdmin && (
-        <EditAdminModal
-          admin={selectedAdmin}
-          onSave={handleUpdateAdmin}
-          onClose={() => {
-            setShowEditModal(false);
-            setSelectedAdmin(null);
+      {/* Edit Admin Dialog */}
+      {editingAdmin && (
+        <EditAdminForm
+          admin={editingAdmin}
+          onSuccess={() => {
+            setEditingAdmin(null);
+            onAdminUpdated();
           }}
-          loading={actionLoading === "update"}
+          onCancel={() => setEditingAdmin(null)}
         />
       )}
-    </div>
-  );
-};
 
-// Edit Admin Modal Component
-const EditAdminModal: React.FC<{
-  admin: Admin;
-  onSave: (updates: any) => void;
-  onClose: () => void;
-  loading: boolean;
-}> = ({ admin, onSave, onClose, loading }) => {
-  const { admin: currentAdmin } = useAuth();
-  const [formData, setFormData] = useState({
-    name: admin.name,
-    email: admin.email,
-    role: admin.role,
-    department: admin.department || "",
-    permissions: { ...admin.permissions },
-  });
+      {/* Change Password Dialog */}
+      {changingPasswordAdmin && (
+        <ChangePasswordDialog
+          admin={changingPasswordAdmin}
+          onSuccess={() => {
+            setChangingPasswordAdmin(null);
+            toast.success("Password changed successfully");
+          }}
+          onCancel={() => setChangingPasswordAdmin(null)}
+          onChangePassword={handlePasswordChange}
+        />
+      )}
 
-  const isSuperAdmin = currentAdmin?.role === "super_admin";
-  const isEditingSelf = currentAdmin?._id === admin._id;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(formData);
-  };
-
-  const handlePermissionChange = (
-    permission: keyof typeof formData.permissions,
-    value: boolean
-  ) => {
-    setFormData({
-      ...formData,
-      permissions: {
-        ...formData.permissions,
-        [permission]: value,
-      },
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="px-6 py-4 border-b">
-          <h3 className="text-lg font-medium text-gray-900">Edit Admin</h3>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Basic Information */}
-          <div>
-            <h4 className="text-md font-medium text-gray-900 mb-4">
-              Basic Information
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Role and Department - Only for super admin editing others */}
-          {isSuperAdmin && !isEditingSelf && (
-            <div>
-              <h4 className="text-md font-medium text-gray-900 mb-4">
-                Role & Department
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Role *
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) =>
-                      setFormData({ ...formData, role: e.target.value as any })
-                    }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="super_admin">Super Admin</option>
-                    <option value="college_admin">College Admin</option>
-                    <option value="dept_admin">Department Admin</option>
-                    <option value="general_admin">General Admin</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.department}
-                    onChange={(e) =>
-                      setFormData({ ...formData, department: e.target.value })
-                    }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Only for department admins"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Required for department admins, leave empty for other roles
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Permissions - Only for super admin editing others */}
-          {isSuperAdmin && !isEditingSelf && (
-            <div>
-              <h4 className="text-md font-medium text-gray-900 mb-4">
-                Permissions
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="canViewPayments"
-                    checked={formData.permissions.canViewPayments}
-                    onChange={(e) =>
-                      handlePermissionChange(
-                        "canViewPayments",
-                        e.target.checked
-                      )
-                    }
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor="canViewPayments"
-                    className="ml-2 block text-sm text-gray-900"
-                  >
-                    View Payments
-                  </label>
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="canExportData"
-                    checked={formData.permissions.canExportData}
-                    onChange={(e) =>
-                      handlePermissionChange("canExportData", e.target.checked)
-                    }
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor="canExportData"
-                    className="ml-2 block text-sm text-gray-900"
-                  >
-                    Export Data
-                  </label>
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="canManageAdmins"
-                    checked={formData.permissions.canManageAdmins}
-                    onChange={(e) =>
-                      handlePermissionChange(
-                        "canManageAdmins",
-                        e.target.checked
-                      )
-                    }
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor="canManageAdmins"
-                    className="ml-2 block text-sm text-gray-900"
-                  >
-                    Manage Admins
-                  </label>
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="canViewAnalytics"
-                    checked={formData.permissions.canViewAnalytics}
-                    onChange={(e) =>
-                      handlePermissionChange(
-                        "canViewAnalytics",
-                        e.target.checked
-                      )
-                    }
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor="canViewAnalytics"
-                    className="ml-2 block text-sm text-gray-900"
-                  >
-                    View Analytics
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+      {/* Toggle Status Confirmation */}
+      <AlertDialog
+        open={!!togglingAdmin}
+        onOpenChange={() => setTogglingAdmin(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {togglingAdmin?.isActive
+                ? "Deactivate Admin?"
+                : "Activate Admin?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {togglingAdmin?.isActive
+                ? `This will deactivate ${togglingAdmin.name}. They will no longer be able to access the system.`
+                : `This will activate ${togglingAdmin?.name}. They will be able to access the system with their current permissions.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => togglingAdmin && handleToggleStatus(togglingAdmin)}
+              className={
+                togglingAdmin?.isActive
+                  ? "bg-amber-600 hover:bg-amber-700"
+                  : "bg-green-600 hover:bg-green-700"
+              }
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+              {togglingAdmin?.isActive ? "Deactivate" : "Activate"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog
+        open={!!deletingAdmin}
+        onOpenChange={() => setDeletingAdmin(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Admin?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete{" "}
+              {deletingAdmin?.name}'s account and remove their data from our
+              servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingAdmin && handleDeleteAdmin(deletingAdmin)}
+              className="bg-destructive hover:bg-destructive/90"
             >
-              {loading ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

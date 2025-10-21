@@ -1,120 +1,200 @@
-// src/components/Executives/ExecutiveTable.tsx
+// src/components/executives/ExecutiveTable.tsx
 import React, { useState } from "react";
-import { executiveService } from "../../services/admin.service";
-import { useAuth } from "../../contexts/useAuth";
 import type { Executive } from "../../types/admin.types";
+import { executiveService } from "../../services/admin.service";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { MoreVertical, Trash2, User, Calendar, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface ExecutiveTableProps {
   executives: Executive[];
   loading: boolean;
   onExecutiveUpdate: () => void;
+  canManage: boolean;
 }
 
 export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
   executives,
   loading,
   onExecutiveUpdate,
+  canManage,
 }) => {
-  const { hasPermission, isRole } = useAuth();
   const [selectedExecutive, setSelectedExecutive] = useState<Executive | null>(
     null
   );
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const canManageExecutives =
-    isRole("super_admin") || hasPermission("canManageAdmins");
-
-  const handleDelete = (executive: Executive) => {
-    setSelectedExecutive(executive);
-    setShowDeleteModal(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedExecutive) return;
-
-    setActionLoading("delete");
+  const handleDeleteExecutive = async (executive: Executive) => {
+    setActionLoading(executive._id);
     try {
-      await executiveService.removeExecutive(selectedExecutive.matricNumber);
-      setShowDeleteModal(false);
-      setSelectedExecutive(null);
+      await executiveService.removeExecutive(executive.matricNumber);
+      toast.success("Executive removed successfully");
+      setDeleteDialogOpen(false);
       onExecutiveUpdate();
     } catch (error: any) {
-      console.error("Failed to delete executive:", error);
-      alert(error.response?.data?.message || "Failed to delete executive");
+      console.error("Failed to remove executive:", error);
+      const errorMessage =
+        error.response?.data?.message || "Failed to remove executive";
+      toast.error(errorMessage);
     } finally {
       setActionLoading(null);
     }
   };
 
-  if (loading) {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getScopeBadgeVariant = (scope: string) => {
+    const scopeVariants: { [key: string]: string } = {
+      president: "destructive",
+      vice_president: "default",
+      secretary: "secondary",
+      treasurer: "outline",
+      social_director: "default",
+      academic_director: "secondary",
+      sports_director: "outline",
+      other: "secondary",
+    };
+
+    return scopeVariants[scope] || "outline";
+  };
+
+  const formatScopeLabel = (scope: string) => {
+    return scope
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  if (loading && executives.length === 0) {
     return (
-      <div className="flex justify-center items-center min-h-32 sm:min-h-48">
-        <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
+      <div className="space-y-3 p-6">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex items-center space-x-4 animate-pulse">
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+            </div>
+            <div className="h-8 bg-gray-200 rounded w-20"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (executives.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Shield className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-4 text-lg font-medium text-gray-900">
+          No executives found
+        </h3>
+        <p className="mt-2 text-sm text-gray-500">
+          No executive students have been added yet.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-      {/* Desktop Table */}
-      <div className="hidden lg:block overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-gray-200">
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
                 Executive
               </th>
-              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
                 Matric Number
               </th>
-              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
                 Scope
               </th>
-              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Added Date
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                Added On
               </th>
-              {canManageExecutives && (
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {canManage && (
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
                   Actions
                 </th>
               )}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-200">
             {executives.map((executive) => (
-              <tr
-                key={executive._id}
-                className="hover:bg-gray-50 transition-colors"
-              >
-                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {executive.fullName || (
-                      <span className="text-gray-400 italic">Not provided</span>
-                    )}
+              <tr key={executive._id} className="hover:bg-gray-50">
+                <td className="py-4 px-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {executive.fullName}
+                      </div>
+                    </div>
                   </div>
                 </td>
-                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900 font-mono bg-gray-50 px-2 py-1 rounded border">
+                <td className="py-4 px-4">
+                  <div className="font-mono text-sm text-gray-900">
                     {executive.matricNumber}
                   </div>
                 </td>
-                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 capitalize">
-                    {executive.scope.replace("_", " ")}
-                  </span>
+                <td className="py-4 px-4">
+                  <Badge variant={getScopeBadgeVariant(executive.scope)}>
+                    {formatScopeLabel(executive.scope)}
+                  </Badge>
                 </td>
-                <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(executive.createdAt).toLocaleDateString()}
+                <td className="py-4 px-4">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Calendar className="h-4 w-4" />
+                    <span>{formatDate(executive.createdAt)}</span>
+                  </div>
                 </td>
-                {canManageExecutives && (
-                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleDelete(executive)}
-                      className="text-red-600 hover:text-red-900 transition-colors px-3 py-1 bg-red-50 rounded-lg hover:bg-red-100 border border-red-200"
-                    >
-                      Remove
-                    </button>
+                {canManage && (
+                  <td className="py-4 px-4">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedExecutive(executive);
+                            setDeleteDialogOpen(true);
+                          }}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Remove Executive
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 )}
               </tr>
@@ -123,141 +203,51 @@ export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
         </table>
       </div>
 
-      {/* Mobile Cards */}
-      <div className="lg:hidden divide-y divide-gray-200">
-        {executives.map((executive) => (
-          <div
-            key={executive._id}
-            className="p-4 hover:bg-gray-50 transition-colors"
-          >
-            <div className="space-y-3">
-              {/* Executive Info */}
-              <div>
-                <div className="text-sm font-medium text-gray-900">
-                  {executive.fullName || (
-                    <span className="text-gray-400 italic">Not provided</span>
-                  )}
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Executive</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to remove this executive? This action cannot
+              be undone.
+            </p>
+            {selectedExecutive && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <div className="font-medium">{selectedExecutive.fullName}</div>
+                <div className="text-sm text-gray-600">
+                  {selectedExecutive.matricNumber}
                 </div>
-                <div className="text-sm text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded border mt-1">
-                  {executive.matricNumber}
-                </div>
-              </div>
-
-              {/* Details */}
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="text-gray-500">Scope:</span>
-                  <div className="mt-1">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 capitalize">
-                      {executive.scope.replace("_", " ")}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-gray-500">Added:</span>
-                  <div className="font-medium mt-1">
-                    {new Date(executive.createdAt).toLocaleDateString()}
-                  </div>
+                <div className="text-sm text-gray-600 capitalize">
+                  {selectedExecutive.scope.replace("_", " ")}
                 </div>
               </div>
-
-              {/* Actions */}
-              {canManageExecutives && (
-                <div className="pt-2">
-                  <button
-                    onClick={() => handleDelete(executive)}
-                    className="w-full px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 border border-red-200 transition-colors"
-                  >
-                    Remove Executive
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
           </div>
-        ))}
-      </div>
-
-      {/* Empty State */}
-      {executives.length === 0 && (
-        <div className="text-center py-8 sm:py-12">
-          <div className="text-gray-400 text-base sm:text-lg">
-            No executives found
-          </div>
-          <div className="text-gray-500 mt-1 sm:mt-2 text-sm">
-            Add executives to grant special payment privileges
-          </div>
-        </div>
-      )}
-
-      {/* Delete Modal */}
-      {showDeleteModal && selectedExecutive && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full">
-            <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">
-                Remove Executive
-              </h3>
-            </div>
-
-            <div className="p-4 sm:p-6">
-              <p className="text-gray-700 text-sm sm:text-base">
-                Are you sure you want to remove{" "}
-                <strong>
-                  {selectedExecutive.fullName || selectedExecutive.matricNumber}
-                </strong>{" "}
-                ({selectedExecutive.matricNumber}) from executives?
-              </p>
-              <p className="text-gray-600 text-xs sm:text-sm mt-2">
-                This will revoke their executive payment privileges.
-              </p>
-
-              <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setSelectedExecutive(null);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors order-2 sm:order-1"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmDelete}
-                  disabled={actionLoading === "delete"}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors order-1 sm:order-2"
-                >
-                  {actionLoading === "delete" ? (
-                    <span className="flex items-center justify-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Removing...
-                    </span>
-                  ) : (
-                    "Remove Executive"
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={actionLoading === selectedExecutive?._id}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                selectedExecutive && handleDeleteExecutive(selectedExecutive)
+              }
+              disabled={actionLoading === selectedExecutive?._id}
+            >
+              {actionLoading === selectedExecutive?._id
+                ? "Removing..."
+                : "Remove Executive"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };

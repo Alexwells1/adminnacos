@@ -1,84 +1,432 @@
-// src/types/admin.types.ts
-export interface Admin {
+// Base Types
+export interface BaseEntity {
   _id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Admin Types
+export interface AdminPermissions {
+  canViewPayments: boolean;
+  canExportData: boolean;
+  canManageAdmins: boolean;
+  canViewAnalytics: boolean;
+}
+
+// In your frontend types (admin.types.ts)
+export interface Admin extends BaseEntity {
   email: string;
   name: string;
-  role: "super_admin" | "college_admin" | "dept_admin" | "general_admin";
-  department?: string;
-  permissions: {
-    canViewPayments: boolean;
-    canExportData: boolean;
-    canManageAdmins: boolean;
-    canViewAnalytics: boolean;
-  };
+  role:
+    | "super_admin"
+    | "college_admin"
+    | "dept_admin" // Changed from "departmental_admin"
+    | "director_finance"
+    | "general_admin"; // Added missing role
+  department?: "COMSSA" | "ICITSA" | "CYDASA" | "SENIFSA";
+  permissions: AdminPermissions;
   isActive: boolean;
 }
 
-export interface Payment {
-  _id: string;
+// Payment Types
+export type PaymentDepartment = "COMSSA" | "ICITSA" | "CYDASA" | "SENIFSA";
+export type PaymentTypeEnum = "college" | "departmental"; // Renamed to avoid conflict
+export type PaymentStatus = "pending" | "completed" | "failed" | "refunded";
+
+// In your frontend types (admin.types.ts)
+export interface Payment extends BaseEntity {
   fullName: string;
   matricNumber: string;
-  department: string;
+  department: PaymentDepartment;
   level: string;
   amount: number;
-  type: "college" | "departmental";
+  type: PaymentTypeEnum;
   reference: string;
   email?: string;
   phoneNumber?: string;
   isExecutive: boolean;
   scope?: string;
   paidAt: string;
-  createdBy: string;
+  createdBy?: Admin | string;
   receiptPdf?: string;
+  status: PaymentStatus;
 }
 
-export interface Executive {
-  _id: string;
+// Fix the enum naming conflict
+export type PaymentType = "college" | "departmental";
+export type ExpenseType = "college" | "departmental";
+
+// Expense Types
+export type ExpensePaymentMethod = "maintenance_balance" | "available_balance";
+export type ExpenseTypeEnum = "college" | "departmental"; // Renamed to avoid conflict
+export type ExpenseAccount =
+  | "college_general"
+  | "dept_comssa"
+  | "dept_icitsa"
+  | "dept_cydasa"
+  | "dept_senifsa";
+
+export interface Expense extends BaseEntity {
+  title: string;
+  description: string;
+  amount: number;
+  paymentMethod: ExpensePaymentMethod;
+  type: ExpenseTypeEnum;
+  department?: PaymentDepartment;
+  account: ExpenseAccount;
+  date: string;
+  createdBy: Admin;
+}
+
+// Executive Types
+export interface Executive extends BaseEntity {
   fullName: string;
   matricNumber: string;
   scope: string;
-  createdAt: string;
+}
+
+// Account Stats Types
+export interface AccountStats {
+  totalRevenue: number;
+  expenses: number;
+  availableBalance: number;
+  lastUpdated: string;
+  _id: string;
+}
+
+// Financial Stats Types
+export interface FinancialAccounts {
+  college_general: AccountStats;
+  dept_comssa: AccountStats;
+  dept_icitsa: AccountStats;
+  dept_cydasa: AccountStats;
+  dept_senifsa: AccountStats;
+}
+
+export interface FinancialStats extends BaseEntity {
+  accounts: FinancialAccounts;
+  totalMaintenance: number;
+  maintenanceExpenses: number;
+  availableMaintenance: number;
+  totalCollegeRevenue: number;
+  totalDepartmentalRevenue: number;
+  totalRevenue: number;
+  totalExpenses: number;
+  netBalance: number;
+  lastUpdated: string;
+  departmentalAccounts?: {
+    [key: string]: number;
+  };
+  availableBalance?: number;
+  totalIncome?: number;
+}
+
+// Dashboard Stats Types
+export interface RevenueBreakdown {
+  _id: string;
+  revenue: number;
+  count: number;
+}
+
+export interface DetailedDepartmentBreakdown {
+  _id: {
+    department: string;
+    level: string;
+    type: string;
+  };
+  revenue: number;
+  count: number;
+}
+
+export interface LevelTypeBreakdown {
+  _id: {
+    level: string;
+    type: string;
+  };
+  revenue: number;
+  count: number;
+}
+
+export interface DepartmentLevelCounts {
+  _id: {
+    department: string;
+    level: string;
+  };
+  count: number;
+  revenue: number;
+}
+
+export interface DailyTrend {
+  _id: string;
+  revenue: number;
+  count: number;
+}
+
+export interface ExecutiveVsRegular {
+  _id: boolean;
+  revenue: number;
+  count: number;
 }
 
 export interface DashboardStats {
-  totalPayments?: number;
-  totalRevenue?: number;
-  collegeVsDeptRevenue?: Array<{ _id: string; revenue: number; count: number }>;
-  departmentBreakdown?: Array<{ _id: string; revenue: number; count: number }>;
-  levelBreakdown?: Array<{ _id: string; revenue: number; count: number }>;
-  executiveVsRegular?: Array<{ _id: boolean; revenue: number; count: number }>;
-  dailyTrends?: Array<{ _id: string; revenue: number; count: number }>;
+  // Core metrics
+  totalPayments: number;
+  totalRevenue: number;
 
-  // College admin specific
+  // Breakdowns from backend
+  collegeVsDeptRevenue?: RevenueBreakdownItem[];
+  departmentBreakdown?: RevenueBreakdownItem[];
+  levelBreakdown?: RevenueBreakdownItem[];
+  executiveVsRegular?: RevenueBreakdownItem[];
+  dailyTrends?: DailyTrendItem[];
+  detailedDepartmentBreakdown?: DetailedDepartmentItem[];
+  levelTypeBreakdown?: LevelTypeItem[];
+  departmentLevelCounts?: DepartmentLevelItem[];
+
+  // Financial stats
+  financialStats?: FinancialStats;
+
+  // Role-specific data
   totalCollegePayments?: number;
   totalCollegeRevenue?: number;
-  levelWisePayments?: Array<{ _id: string; revenue: number; count: number }>;
-  executiveVsRegularCollege?: Array<{
-    _id: boolean;
-    revenue: number;
-    count: number;
-  }>;
+  levelWisePayments?: RevenueBreakdownItem[];
+  executiveVsRegularCollege?: RevenueBreakdownItem[];
   recentPayments?: Payment[];
 
-  // Departmental admin specific
   totalDeptPayments?: number;
   totalDeptRevenue?: number;
-  levelWiseDept?: Array<{ _id: string; revenue: number; count: number }>;
+  levelWiseDept?: RevenueBreakdownItem[];
   recentDeptPayments?: Payment[];
   departmentStudents?: Payment[];
   department?: string;
+
+  // Access info
+  accessedBy?: { role: string; name: string };
 }
 
-export interface PaginatedResponse<T> {
-  payments: T[];
+
+export interface RevenueBreakdownItem {
+  _id: string | boolean | null;
+  revenue: number;
+  count: number;
+}
+export interface BreakdownItem {
+  _id: string;
+  revenue: number;
+  count: number;
+}
+
+export interface ExecutiveVsRegularItem {
+  _id: boolean;
+  revenue: number;
+  count: number;
+}
+
+
+export interface DepartmentLevelItem {
+  _id: {
+    department: string;
+    level: string;
+  };
+  count: number;
+  revenue: number;
+}
+
+export interface LevelTypeItem {
+  _id: {
+    level: string;
+    type: string;
+  };
+  revenue: number;
+  count: number;
+}
+
+export interface DetailedDepartmentItem {
+  _id: {
+    department: string;
+    level: string;
+    type: string;
+  };
+  revenue: number;
+  count: number;
+}
+
+export interface DailyTrendItem {
+  _id: string; // date string
+  revenue: number;
+  count: number;
+}
+
+// API Response Types
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
+export interface LoginResponse {
+  admin: Admin;
+  token: string;
+}
+
+export interface StatsResponse {
+  stats: DashboardStats;
+}
+
+// Filter Types
+export interface PaymentFilters {
+  page?: number;
+  limit?: number;
+  sort?: string;
+  type?: PaymentTypeEnum;
+  department?: PaymentDepartment;
+  level?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface ExpenseFilters {
+  page?: number;
+  limit?: number;
+}
+
+// Form Data Types
+export interface LoginData {
+  email: string;
+  password: string;
+}
+
+export interface RegisterAdminData {
+  email: string;
+  password: string;
+  name: string;
+  role: Admin["role"];
+  department?: Admin["department"];
+}
+
+export interface UpdateAdminData {
+  name?: string;
+  email?: string;
+  role?: Admin["role"];
+  department?: Admin["department"];
+  permissions?: Partial<AdminPermissions>;
+  isActive?: boolean;
+}
+
+export interface CreatePaymentData {
+  fullName: string;
+  matricNumber: string;
+  department: PaymentDepartment;
+  level: string;
+  amount: number;
+  type: PaymentTypeEnum;
+  email?: string;
+  phoneNumber?: string;
+  isExecutive?: boolean;
+  scope?: string;
+}
+
+export interface CreateExecutiveData {
+  fullName: string;
+  matricNumber: string;
+  scope: string;
+}
+
+export interface CreateAdminData {
+  email: string;
+  password: string;
+  name: string;
+  role: Admin["role"];
+  department?: Admin["department"];
+}
+
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface CreateExpenseData {
+  title: string;
+  description: string;
+  amount: number;
+  paymentMethod: ExpensePaymentMethod;
+  type: ExpenseTypeEnum;
+  department?: PaymentDepartment;
+  account: ExpenseAccount;
+  date?: string;
+}
+
+export interface ExpensesResponse {
+  expenses: Expense[];
   pagination: {
     total: number;
     page: number;
     limit: number;
     totalPages: number;
   };
-  filters: {
+}
+
+// Account types for the financial system
+export interface AccountBalance {
+  totalRevenue: number;
+  expenses: number;
+  availableBalance: number;
+}
+
+export interface PaginatedResponse<T> {
+  data?: T[];
+  expenses?: T[];
+  payments?: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  filters?: {
     type?: string;
     department?: string;
   };
 }
+
+export interface PaginatedExpenses {
+  expenses: Expense[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// Department mapping constants for frontend
+export const DEPARTMENT_MAPPING = {
+  "Computer Science": "COMSSA",
+  "Software Engineering": "SENIFSA",
+  "Cyber Security": "CYDASA",
+  "Information Technology": "ICITSA",
+} as const;
+
+export const REVERSE_DEPARTMENT_MAPPING = {
+  COMSSA: "Computer Science",
+  SENIFSA: "Software Engineering",
+  CYDASA: "Cyber Security",
+  ICITSA: "Information Technology",
+} as const;
+
+export const ACCOUNT_MAPPING = {
+  college_general: "College General Fund",
+  dept_comssa: "COMSSA Department Fund",
+  dept_icitsa: "ICITSA Department Fund",
+  dept_cydasa: "CYDASA Department Fund",
+  dept_senifsa: "SENIFSA Department Fund",
+} as const;
+
+// Re-export types for backward compatibility with different names
+export type {
+  Payment as PaymentInterface,
+  Expense as ExpenseInterface,
+  Executive as ExecutiveInterface,
+  FinancialStats as FinancialStatsInterface,
+  DashboardStats as DashboardStatsInterface,
+};

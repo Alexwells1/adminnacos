@@ -1,14 +1,17 @@
 // src/components/Payments/PaymentSearch.tsx
 import React, { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, X } from "lucide-react";
 
 interface PaymentSearchProps {
   onSearch: (query: string) => void;
-  loading?: boolean;
+  loading: boolean;
 }
 
 export const PaymentSearch: React.FC<PaymentSearchProps> = ({
   onSearch,
-  loading = false,
+  loading,
 }) => {
   const [query, setQuery] = useState("");
 
@@ -23,38 +26,29 @@ export const PaymentSearch: React.FC<PaymentSearchProps> = ({
   };
 
   return (
-    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 mb-4 sm:mb-6">
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by matric number, reference, or name..."
-            className="w-full border border-gray-300 rounded-lg px-3 sm:px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
-          />
-        </div>
-
-        <div className="flex gap-2">
+    <form onSubmit={handleSubmit} className="flex gap-2">
+      <div className="relative flex-1">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          type="text"
+          placeholder="Search by matric number, reference, or name..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="pl-10 pr-10"
+        />
+        {query && (
           <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 sm:flex-none px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm sm:text-base"
+            type="button"
+            onClick={handleClear}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
-            {loading ? "Searching..." : "Search"}
+            <X className="h-4 w-4" />
           </button>
-
-          {query && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="flex-1 sm:flex-none px-4 sm:px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm sm:text-base"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      </form>
-    </div>
+        )}
+      </div>
+      <Button type="submit" disabled={loading}>
+        {loading ? "Searching..." : "Search"}
+      </Button>
+    </form>
   );
 };

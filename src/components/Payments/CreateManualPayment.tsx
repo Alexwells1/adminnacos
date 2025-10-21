@@ -1,333 +1,441 @@
 // src/components/Payments/CreateManualPayment.tsx
 import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { paymentService } from "../../services/admin.service";
-import { useAuth } from "../../contexts/useAuth";
+import { useAuth } from "@/contexts/useAuth";
+import { Plus, CreditCard, User, Mail } from "lucide-react";
+import { toast } from "sonner";
+
 
 interface CreateManualPaymentProps {
   onPaymentCreated: () => void;
-  defaultType?: "college" | "departmental";
 }
+
+const DEPARTMENTS = [
+  { value: "Computer Science", label: "Computer Science (COMSSA)" },
+  {
+    value: "Software Engr & Information Systems",
+    label: "Software Engineering (SENIFSA)",
+  },
+  { value: "Cybersecurity & Data Science", label: "Cyber Security (CYDASA)" },
+  {
+    value: "ICT & Information Technology",
+    label: "Information Technology (ICITSA)",
+  },
+];
+
+const LEVELS = [
+  { value: "100", label: "Level 100" },
+  { value: "200", label: "Level 200" },
+  { value: "300", label: "Level 300" },
+  { value: "400", label: "Level 400" },
+];
+
+const PAYMENT_TYPES = [
+  { value: "college", label: "College Payment" },
+  { value: "departmental", label: "Departmental Payment" },
+];
+
+const EXECUTIVE_SCOPES = [
+  { value: "college", label: "college" },
+  { value: "department", label: "department" },
+];
 
 export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
   onPaymentCreated,
-  defaultType = "college",
 }) => {
-  const { admin, hasPermission } = useAuth();
-  const [showForm, setShowForm] = useState(false);
+  const { admin } = useAuth();
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
   const [formData, setFormData] = useState({
     fullName: "",
     matricNumber: "",
-    department: admin?.department || "",
-    level: "100",
+    department: "",
+    level: "",
     amount: "",
-    type: defaultType,
+    type: "",
     email: "",
     phoneNumber: "",
     isExecutive: false,
-    scope: "college",
+    scope: "",
   });
+
+  // Determine allowed payment types and departments based on role
+  const getAllowedPaymentTypes = () => {
+    if (admin?.role === "super_admin" || admin?.role === "director_finance") {
+      return PAYMENT_TYPES;
+    }
+    if (admin?.role === "college_admin") {
+      return PAYMENT_TYPES.filter((type) => type.value === "college");
+    }
+    if (admin?.role === "dept_admin") {
+      return PAYMENT_TYPES.filter((type) => type.value === "departmental");
+    }
+    return [];
+  };
+
+ 
+
+  const allowedPaymentTypes = getAllowedPaymentTypes();
+  const allowedDepartments = admin?.role === "dept_admin" ? DEPARTMENTS : [];
+
+  const handleInputChange = (field: string, value: string | boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-
-    if (!formData.fullName || !formData.matricNumber || !formData.amount) {
-      setError("Full name, matric number, and amount are required");
-      setLoading(false);
-      return;
-    }
 
     try {
-      await paymentService.createManualPayment({
-        ...formData,
-        amount: parseFloat(formData.amount),
-      });
+      // Validate required fields
+      if (
+        !formData.fullName ||
+        !formData.matricNumber ||
+        !formData.amount ||
+        !formData.type
+      ) {
+    toast.error("Please fill in all required fields");
+        return;
+      }
 
-      // Reset form
+      // Validate department for departmental payments
+      if (formData.type === "departmental" && !formData.department) {
+        toast.error("Department is required for departmental payments");
+        return;
+      }
+
+      // Validate scope for executive payments
+      if (formData.isExecutive && !formData.scope) {
+        toast.error("Executive scope is required for executive payments");
+        return;
+      }
+
+      const paymentData = {
+        fullName: formData.fullName,
+        matricNumber: formData.matricNumber,
+        department: formData.department,
+        level: formData.level,
+        amount: parseFloat(formData.amount),
+        type: formData.type as "college" | "departmental",
+        email: formData.email || undefined,
+        phoneNumber: formData.phoneNumber || undefined,
+        isExecutive: formData.isExecutive,
+        scope: formData.isExecutive ? formData.scope : undefined,
+      };
+
+      await paymentService.createManualPayment(paymentData);
+
+      toast.success("Manual payment created successfully");
+
+      // Reset form and close dialog
       setFormData({
         fullName: "",
         matricNumber: "",
-        department: admin?.department || "",
-        level: "100",
+        department: "",
+        level: "",
         amount: "",
-        type: defaultType,
+        type: "",
         email: "",
         phoneNumber: "",
         isExecutive: false,
-        scope: "college",
+        scope: "",
       });
-
-      setShowForm(false);
+      setOpen(false);
       onPaymentCreated();
     } catch (error: any) {
       console.error("Failed to create manual payment:", error);
-      setError(error.response?.data?.message || "Failed to create payment");
+      toast.error(
+        error?.response?.data?.message ||
+          "An error occurred while creating the payment"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    setShowForm(false);
+  const resetForm = () => {
     setFormData({
       fullName: "",
       matricNumber: "",
-      department: admin?.department || "",
-      level: "100",
+      department: "",
+      level: "",
       amount: "",
-      type: defaultType,
+      type: "",
       email: "",
       phoneNumber: "",
       isExecutive: false,
-      scope: "college",
+      scope: "",
     });
-    setError("");
   };
 
-  // Determine allowed payment types based on role
-  const allowedTypes = [];
-  if (admin?.role === "super_admin" || admin?.role === "college_admin") {
-    allowedTypes.push("college");
-  }
-  if (admin?.role === "super_admin" || admin?.role === "dept_admin") {
-    allowedTypes.push("departmental");
-  }
-
-  if (!hasPermission("canViewPayments")) {
-    return null;
-  }
-
   return (
-    <div className="mb-4 sm:mb-6">
-      {!showForm ? (
-        <button
-          onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center transition-colors text-sm sm:text-base"
-        >
-          <span className="mr-2">+</span>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
           Create Manual Payment
-        </button>
-      ) : (
-        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
             Create Manual Payment
-          </h3>
+          </DialogTitle>
+        </DialogHeader>
 
-          {error && (
-            <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Student Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Student Information
+            </h3>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              {/* Full Name */}
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">
+                  Full Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="fullName"
                   value={formData.fullName}
                   onChange={(e) =>
-                    setFormData({ ...formData, fullName: e.target.value })
+                    handleInputChange("fullName", e.target.value)
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="Enter student's full name"
                   required
                 />
               </div>
 
-              {/* Matric Number */}
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Matric Number *
-                </label>
-                <input
-                  type="text"
+              <div className="space-y-2">
+                <Label htmlFor="matricNumber">
+                  Matric Number <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="matricNumber"
                   value={formData.matricNumber}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      matricNumber: e.target.value.toUpperCase(),
-                    })
+                    handleInputChange("matricNumber", e.target.value)
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="Enter matric number"
                   required
                 />
               </div>
+            </div>
 
-              {/* Department */}
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Department
-                </label>
-                <input
-                  type="text"
-                  value={formData.department}
-                  onChange={(e) =>
-                    setFormData({ ...formData, department: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  required
-                />
-              </div>
-
-              {/* Level */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Level *
-                </label>
-                <select
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="level">
+                  Level <span className="text-red-500">*</span>
+                </Label>
+                <Select
                   value={formData.level}
-                  onChange={(e) =>
-                    setFormData({ ...formData, level: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  required
+                  onValueChange={(value) => handleInputChange("level", value)}
                 >
-                  <option value="100">100</option>
-                  <option value="200">200</option>
-                  <option value="300">300</option>
-                  <option value="400">400</option>
-                  <option value="500">500</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LEVELS.map((level) => (
+                      <SelectItem key={level.value} value={level.value}>
+                        {level.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Amount */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Amount (₦) *
-                </label>
-                <input
+              
+                <div className="space-y-2">
+                  <Label htmlFor="department">
+                    Department{" "}
+                    {formData.type === "departmental" && (
+                      <span className="text-red-500">*</span>
+                    )}
+                  </Label>
+                  <Select
+                    value={formData.department}
+                    onValueChange={(value) =>
+                      handleInputChange("department", value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEPARTMENTS.map((dept) => (
+                        <SelectItem key={dept.value} value={dept.value}>
+                          {dept.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+             
+            </div>
+          </div>
+
+          {/* Payment Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Payment Information
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="type">
+                  Payment Type <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) => handleInputChange("type", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select payment type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allowedPaymentTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="amount">
+                  Amount (₦) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="amount"
                   type="number"
                   value={formData.amount}
-                  onChange={(e) =>
-                    setFormData({ ...formData, amount: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  placeholder="0.00"
+                  onChange={(e) => handleInputChange("amount", e.target.value)}
+                  placeholder="Enter amount"
+                  min="0"
                   step="0.01"
                   required
                 />
               </div>
+            </div>
+          </div>
 
-              {/* Payment Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Payment Type *
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({ ...formData, type: e.target.value as any })
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  required
-                >
-                  {allowedTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Contact Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Contact Information (Optional)
+            </h3>
 
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  placeholder="Enter email address"
                 />
               </div>
 
-              {/* Phone Number */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Input
+                  id="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={(e) =>
-                    setFormData({ ...formData, phoneNumber: e.target.value })
+                    handleInputChange("phoneNumber", e.target.value)
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="Enter phone number"
                 />
               </div>
             </div>
+          </div>
 
-            {/* Executive Options */}
-            <div className="border-t pt-4">
-              <div className="flex items-center mb-3">
-                <input
-                  type="checkbox"
-                  id="isExecutive"
-                  checked={formData.isExecutive}
-                  onChange={(e) =>
-                    setFormData({ ...formData, isExecutive: e.target.checked })
-                  }
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label
-                  htmlFor="isExecutive"
-                  className="ml-2 block text-sm text-gray-900"
+          {/* Executive Status */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium">Executive Status</h3>
+                <p className="text-sm text-gray-600">
+                  Mark if this student is an executive
+                </p>
+              </div>
+              <Switch
+                checked={formData.isExecutive}
+                onCheckedChange={(checked) =>
+                  handleInputChange("isExecutive", checked)
+                }
+              />
+            </div>
+
+            {formData.isExecutive && (
+              <div className="space-y-2">
+                <Label htmlFor="scope">
+                  Executive Scope <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.scope}
+                  onValueChange={(value) => handleInputChange("scope", value)}
                 >
-                  This is an executive payment
-                </label>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select executive scope" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EXECUTIVE_SCOPES.map((scope) => (
+                      <SelectItem key={scope.value} value={scope.value}>
+                        {scope.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            )}
+          </div>
 
-              {formData.isExecutive && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Executive Scope
-                  </label>
-                  <select
-                    value={formData.scope}
-                    onChange={(e) =>
-                      setFormData({ ...formData, scope: e.target.value })
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  >
-                    <option value="college">College Wide</option>
-                    <option value="departmental">Departmental</option>
-                    <option value="faculty">Faculty</option>
-                    <option value="student_union">Student Union</option>
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors order-2 sm:order-1"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors order-1 sm:order-2"
-              >
-                {loading ? "Creating..." : "Create Payment"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-    </div>
+          {/* Action Buttons */}
+          <div className="flex gap-3 justify-end pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                resetForm();
+                setOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Creating Payment..." : "Create Payment"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };

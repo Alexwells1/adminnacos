@@ -1,7 +1,7 @@
 // src/components/Receipts/ReceiptManagement.tsx
 import React, { useState } from "react";
 import { receiptService } from "../../services/admin.service";
-import { useAuth } from "../../contexts/useAuth";
+import { useAuth } from "@/contexts/useAuth";
 
 interface ReceiptManagementProps {
   reference: string;

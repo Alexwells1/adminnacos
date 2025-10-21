@@ -1,5 +1,17 @@
 // src/components/Payments/PaymentFilters.tsx
 import React from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Download, Calendar } from "lucide-react";
+import { useAuth } from "@/contexts/useAuth";
 
 interface PaymentFiltersProps {
   filters: {
@@ -14,7 +26,44 @@ interface PaymentFiltersProps {
   onExportCSV: () => void;
   onExportPDF: () => void;
   canExport: boolean;
+  isExporting?: boolean;
 }
+
+const DEPARTMENTS = [
+  { value: "all", label: "All Departments" },
+  { value: "Computer Science", label: "Computer Science (COMSSA)" },
+  {
+    value: "Software Engr & Information Systems",
+    label: "Software Engineering (SENIFSA)",
+  },
+  { value: "Cybersecurity & Data Science", label: "Cyber Security (CYDASA)" },
+  {
+    value: "ICT & Information Technology",
+    label: "Information Technology (ICITSA)",
+  },
+];
+
+const PAYMENT_TYPES = [
+  { value: "all", label: "All Types" },
+  { value: "college", label: "College" },
+  { value: "departmental", label: "Departmental" },
+];
+
+// Updated LEVELS array - "200" now includes both regular and D.E
+const LEVELS = [
+  { value: "all", label: "All Levels" },
+  { value: "100", label: "Level 100" },
+  { value: "200", label: "Level 200 (including 200 D.E)" },
+  { value: "200 D.E", label: "Level 200 D.E" },
+  { value: "300", label: "Level 300" },
+  { value: "400", label: "Level 400" },
+];
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest First" },
+  { value: "oldest", label: "Oldest First" },
+  { value: "amount", label: "Highest Amount" },
+];
 
 export const PaymentFilters: React.FC<PaymentFiltersProps> = ({
   filters,
@@ -22,135 +71,337 @@ export const PaymentFilters: React.FC<PaymentFiltersProps> = ({
   onExportCSV,
   onExportPDF,
   canExport,
+  isExporting = false,
 }) => {
-  const handleFilterChange = (key: string, value: string) => {
-    onFiltersChange({ ...filters, [key]: value });
+  const { admin, isRole } = useAuth();
+
+  // Define which filters each admin role has access to
+  const hasAccessTo = {
+    paymentType: isRole(["super_admin", "director_finance"]),
+    department: isRole(["super_admin", "director_finance", "college_admin"]),
+    level: isRole([
+      "super_admin",
+      "director_finance",
+      "college_admin",
+      "dept_admin",
+    ]),
+    dateRange: isRole([
+      "super_admin",
+      "director_finance",
+      "college_admin",
+      "dept_admin",
+    ]),
+    sort: isRole([
+      "super_admin",
+      "director_finance",
+      "college_admin",
+      "dept_admin",
+    ]),
   };
 
+  // Get available payment types based on admin role
+  const getAvailablePaymentTypes = () => {
+    if (!hasAccessTo.paymentType) return [];
+
+    if (isRole(["super_admin", "director_finance"])) {
+      return PAYMENT_TYPES; 
+    }
+
+    if (isRole("college_admin")) {
+      return PAYMENT_TYPES.filter(
+        (type) => type.value === "college" || type.value === "all"
+      );
+    }
+
+    if (isRole("dept_admin")) {
+      return PAYMENT_TYPES.filter(
+        (type) => type.value === "departmental" || type.value === "all"
+      );
+    }
+
+    return PAYMENT_TYPES.filter((type) => type.value === "all");
+  };
+
+  // Get available departments based on admin role
+  const getAvailableDepartments = () => {
+    if (!hasAccessTo.department) return [];
+
+    if (isRole(["super_admin", "director_finance", "college_admin"])) {
+      return DEPARTMENTS; // Can see all departments
+    }
+
+    if (isRole("dept_admin") && admin?.department) {
+      // Department admin can only see their own department
+      const dept = DEPARTMENTS.find((d) => d.value === admin.department);
+      return dept ? [DEPARTMENTS[0], dept] : [DEPARTMENTS[0]];
+    }
+
+    return [DEPARTMENTS[0]]; // Only "All Departments"
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    onFiltersChange({
+      ...filters,
+      [key]: value,
+    });
+  };
+
+  const clearFilters = () => {
+    onFiltersChange({
+      type: "all",
+      department: "all",
+      level: "all",
+      startDate: "",
+      endDate: "",
+      sort: "newest",
+    });
+  };
+
+  const hasActiveFilters =
+    filters.type !== "all" ||
+    filters.department !== "all" ||
+    filters.level !== "all" ||
+    filters.startDate ||
+    filters.endDate;
+
+  const activeFilterCount = Object.values(filters).filter(
+    (val) => val && val !== "all"
+  ).length;
+
+  const availablePaymentTypes = getAvailablePaymentTypes();
+  const availableDepartments = getAvailableDepartments();
+
+  // Count how many filter columns we need for responsive layout
+  const visibleFilters = [
+    hasAccessTo.paymentType && availablePaymentTypes.length > 0,
+    hasAccessTo.department && availableDepartments.length > 0,
+    hasAccessTo.level,
+  ].filter(Boolean).length;
+
+  const filterWidth = visibleFilters > 0 ? `flex-1 min-w-[200px]` : "flex-1";
+
   return (
-    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 mb-4 sm:mb-6">
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
-        {/* Payment Type Filter */}
-        <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-            Type
-          </label>
-          <select
-            value={filters.type}
-            onChange={(e) => handleFilterChange("type", e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          >
-            <option value="">All Types</option>
-            <option value="college">College</option>
-            <option value="departmental">Departmental</option>
-          </select>
-        </div>
-
-        {/* Department Filter */}
-        <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-            Department
-          </label>
-          <select
-            value={filters.department}
-            onChange={(e) => handleFilterChange("department", e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          >
-            <option value="">All Departments</option>
-            <option value="Computer Science">Computer Science</option>
-            <option value="Electrical Engineering">
-              Electrical Engineering
-            </option>
-            <option value="Mechanical Engineering">
-              Mechanical Engineering
-            </option>
-          </select>
-        </div>
-
-        {/* Level Filter */}
-        <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-            Level
-          </label>
-          <select
-            value={filters.level}
-            onChange={(e) => handleFilterChange("level", e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          >
-            <option value="">All Levels</option>
-            <option value="100">100</option>
-            <option value="200">200</option>
-            <option value="300">300</option>
-            <option value="400">400</option>
-            <option value="500">500</option>
-          </select>
-        </div>
-
-        {/* Start Date */}
-        <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-            Start Date
-          </label>
-          <input
-            type="date"
-            value={filters.startDate}
-            onChange={(e) => handleFilterChange("startDate", e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          />
-        </div>
-
-        {/* End Date */}
-        <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-            End Date
-          </label>
-          <input
-            type="date"
-            value={filters.endDate}
-            onChange={(e) => handleFilterChange("endDate", e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          />
-        </div>
-
-        {/* Sort */}
-        <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-            Sort By
-          </label>
-          <select
-            value={filters.sort}
-            onChange={(e) => handleFilterChange("sort", e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="amount">Amount (High to Low)</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mt-4">
-        <div className="text-xs sm:text-sm text-gray-500">
-          Use filters to find specific payments
-        </div>
-
-        {canExport && (
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={onExportCSV}
-              className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-green-700 bg-green-50 rounded-lg hover:bg-green-100 border border-green-200 transition-colors"
+    <div className="space-y-4">
+      {/* First Row of Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        {/* Payment Type Filter - Completely hidden if no access */}
+        {hasAccessTo.paymentType && availablePaymentTypes.length > 0 && (
+          <div className={`space-y-2 ${filterWidth}`}>
+            <Label htmlFor="type" className="text-sm font-medium">
+              Payment Type
+            </Label>
+            <Select
+              value={filters.type}
+              onValueChange={(value) => handleFilterChange("type", value)}
             >
-              Export CSV
-            </button>
-            <button
-              onClick={onExportPDF}
-              className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 border border-red-200 transition-colors"
-            >
-              Export PDF
-            </button>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availablePaymentTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {availablePaymentTypes.length === 1 &&
+              availablePaymentTypes[0].value === "college" && (
+                <p className="text-xs text-gray-500">College payments only</p>
+              )}
+            {availablePaymentTypes.length === 1 &&
+              availablePaymentTypes[0].value === "departmental" && (
+                <p className="text-xs text-gray-500">
+                  Departmental payments only
+                </p>
+              )}
           </div>
         )}
+
+        {/* Department Filter - Completely hidden if no access */}
+        {hasAccessTo.department && availableDepartments.length > 0 && (
+          <div className={`space-y-2 ${filterWidth}`}>
+            <Label htmlFor="department" className="text-sm font-medium">
+              Department
+            </Label>
+            <Select
+              value={filters.department}
+              onValueChange={(value) => handleFilterChange("department", value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableDepartments.map((dept) => (
+                  <SelectItem key={dept.value} value={dept.value}>
+                    {dept.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {availableDepartments.length === 2 && isRole("dept_admin") && (
+              <p className="text-xs text-gray-500">Your department only</p>
+            )}
+          </div>
+        )}
+
+        {/* Level Filter - Completely hidden if no access */}
+        {hasAccessTo.level && (
+          <div className={`space-y-2 ${filterWidth}`}>
+            <Label htmlFor="level" className="text-sm font-medium">
+              Level
+            </Label>
+            <Select
+              value={filters.level}
+              onValueChange={(value) => handleFilterChange("level", value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {LEVELS.map((level) => (
+                  <SelectItem key={level.value} value={level.value}>
+                    {level.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {filters.level === "200" && (
+              <p className="text-xs text-green-600">
+                Includes both Level 200 and Level 200 D.E
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* If no filters are visible in first row, show a message */}
+        {visibleFilters === 0 && (
+          <div className="flex-1 text-center py-4 text-gray-500 text-sm">
+            No filters available for your role
+          </div>
+        )}
+      </div>
+
+      {/* Second Row of Filters - Completely hidden if no access */}
+      {(hasAccessTo.dateRange || hasAccessTo.sort) && (
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Date Range Filters - Completely hidden if no access */}
+          {hasAccessTo.dateRange && (
+            <>
+              <div className="space-y-2 flex-1 min-w-[150px]">
+                <Label
+                  htmlFor="startDate"
+                  className="text-sm font-medium flex items-center gap-2"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Start Date
+                </Label>
+                <Input
+                  type="date"
+                  id="startDate"
+                  value={filters.startDate}
+                  onChange={(e) =>
+                    handleFilterChange("startDate", e.target.value)
+                  }
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-2 flex-1 min-w-[150px]">
+                <Label
+                  htmlFor="endDate"
+                  className="text-sm font-medium flex items-center gap-2"
+                >
+                  <Calendar className="h-4 w-4" />
+                  End Date
+                </Label>
+                <Input
+                  type="date"
+                  id="endDate"
+                  value={filters.endDate}
+                  onChange={(e) =>
+                    handleFilterChange("endDate", e.target.value)
+                  }
+                  className="w-full"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Sort Filter - Completely hidden if no access */}
+          {hasAccessTo.sort && (
+            <div className="space-y-2 flex-1">
+              <Label htmlFor="sort" className="text-sm font-medium">
+                Sort By
+              </Label>
+              <Select
+                value={filters.sort}
+                onValueChange={(value) => handleFilterChange("sort", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Filter Summary */}
+      {hasActiveFilters && (
+        <div className="text-xs text-muted-foreground">
+          Active filters: {activeFilterCount}
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
+        <div className="flex gap-2 justify-center sm:justify-start">
+          {hasActiveFilters && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearFilters}
+              className="flex-1 sm:flex-none"
+            >
+              Clear Filters
+            </Button>
+          )}
+        </div>
+
+        <div className="flex gap-2 justify-center sm:justify-end">
+          {canExport && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onExportCSV}
+                disabled={isExporting}
+                className="flex-1 sm:flex-none"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isExporting ? "Exporting..." : "Export CSV"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onExportPDF}
+                disabled={isExporting}
+                className="flex-1 sm:flex-none"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isExporting ? "Exporting..." : "Export PDF"}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

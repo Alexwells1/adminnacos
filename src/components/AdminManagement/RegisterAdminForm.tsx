@@ -1,416 +1,316 @@
-// src/components/AdminManagement/RegisterAdminForm.tsx
-import React, { useState } from "react";
-import { adminAuthService } from "../../services/admin.service";
-import { useAuth } from "../../contexts/useAuth";
+// src/components/admin/CreateAdminForm.tsx
+import React, { useState } from 'react';
+import { adminManagementService } from '../../services/admin.service';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
+import { 
+  Shield,
+  Building,
+  GraduationCap,
+  UserCog,
+  Eye,
+  EyeOff,
+  Mail,
+  User,
+  Key
+} from 'lucide-react';
+import { toast } from 'sonner';
 
-
-interface RegisterAdminFormProps {
-  onAdminRegistered: () => void;
+interface CreateAdminFormProps {
+  onSuccess: () => void;
+  onCancel: () => void;
 }
 
-export const RegisterAdminForm: React.FC<RegisterAdminFormProps> = ({
-  onAdminRegistered,
-}) => {
-  const { admin: currentAdmin } = useAuth();
-  const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+const DEPARTMENTS = [
+  'Computer Science',
+  'Software Engineering', 
+  'Cyber Security',
+  'Information Technology'
+];
 
+const ROLES = [
+  { value: 'super_admin', label: 'Super Admin', icon: Shield, description: 'Full system access' },
+  { value: 'director_finance', label: 'Director Finance', icon: UserCog, description: 'Financial management' },
+  { value: 'college_admin', label: 'College Admin', icon: Building, description: 'College-level access' },
+  { value: 'dept_admin', label: 'Department Admin', icon: GraduationCap, description: 'Department-specific access' },
+  { value: 'general_admin', label: 'General Admin', icon: UserCog, description: 'Basic admin access' },
+];
+
+export const CreateAdminForm: React.FC<CreateAdminFormProps> = ({
+  onSuccess,
+  onCancel,
+}) => {
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    role: "general_admin" as
-      | "super_admin"
-      | "college_admin"
-      | "dept_admin"
-      | "general_admin",
-    department: "",
-    permissions: {
-      canViewPayments: true,
-      canExportData: true,
-      canManageAdmins: false,
-      canViewAnalytics: true,
-    },
+    name: '',
+    email: '',
+    password: '',
+    role: '',
+    department: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.name || !formData.email || !formData.password || !formData.role) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (formData.role === 'dept_admin' && !formData.department) {
+      toast.error('Department is required for department admins');
+      return;
+    }
+
     setLoading(true);
-    setError("");
-
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      setLoading(false);
-      return;
-    }
-
-    if (formData.role === "dept_admin" && !formData.department) {
-      setError("Department is required for department admins");
-      setLoading(false);
-      return;
-    }
-
-    if (formData.role !== "dept_admin" && formData.department) {
-      setError("Department can only be set for department admins");
-      setLoading(false);
-      return;
-    }
 
     try {
-      await adminAuthService.register({
+      await adminManagementService.registerAdmin({
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: formData.role,
+        role: formData.role as any,
         department: formData.department || undefined,
-        permissions: formData.permissions,
       });
-
-      // Reset form
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-        role: "general_admin",
-        department: "",
-        permissions: {
-          canViewPayments: true,
-          canExportData: true,
-          canManageAdmins: false,
-          canViewAnalytics: true,
-        },
-      });
-
-      setShowForm(false);
-      onAdminRegistered();
+      
+      onSuccess();
     } catch (error: any) {
-      console.error("Failed to register admin:", error);
-      setError(error.response?.data?.message || "Failed to register admin");
+      console.error('Failed to create admin:', error);
+      toast.error(error.response?.data?.message || 'Failed to create admin');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    setShowForm(false);
-    setFormData({
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      role: "general_admin",
-      department: "",
-      permissions: {
-        canViewPayments: true,
-        canExportData: true,
-        canManageAdmins: false,
-        canViewAnalytics: true,
-      },
-    });
-    setError("");
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+      // Clear department when role changes to non-dept_admin
+      ...(field === 'role' && value !== 'dept_admin' && { department: '' })
+    }));
   };
 
-  const handleRoleChange = (role: string) => {
-    const newRole = role as typeof formData.role;
-    setFormData({
-      ...formData,
-      role: newRole,
-      department: newRole === "dept_admin" ? formData.department : "",
-      permissions: {
-        ...formData.permissions,
-        canManageAdmins: newRole === "super_admin",
-      },
-    });
+  const getRoleIcon = (roleValue: string) => {
+    const role = ROLES.find(r => r.value === roleValue);
+    return role ? React.createElement(role.icon, { className: "h-4 w-4" }) : null;
   };
-
-  // Only super admins can register new admins
-  if (currentAdmin?.role !== "super_admin") {
-    return null;
-  }
 
   return (
-    <div className="mb-6">
-      {!showForm ? (
-        <button
-          onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
-        >
-          <span className="mr-2">+</span>
-          Register New Admin
-        </button>
-      ) : (
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Register New Admin
-          </h3>
+    <Dialog open onOpenChange={onCancel}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Create New Admin
+          </DialogTitle>
+          <DialogDescription>
+            Add a new administrator to the system with specific permissions and access levels.
+          </DialogDescription>
+        </DialogHeader>
 
-          {error && (
-            <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-              {error}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Name */}
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name *</Label>
+            <div className="relative">
+              <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="name"
+                placeholder="Enter full name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="pl-10"
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          {/* Email */}
+          <div className="space-y-2">
+            <Label htmlFor="email">Email Address *</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter email address"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className="pl-10"
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          {/* Password */}
+          <div className="space-y-2">
+            <Label htmlFor="password">Password *</Label>
+            <div className="relative">
+              <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter password"
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                className="pl-10 pr-10"
+                disabled={loading}
+                minLength={6}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={loading}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Password must be at least 6 characters long
+            </p>
+          </div>
+
+          {/* Role */}
+          <div className="space-y-2">
+            <Label htmlFor="role">Role *</Label>
+            <Select
+              value={formData.role}
+              onValueChange={(value) => handleInputChange('role', value)}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLES.map((role) => (
+                  <SelectItem key={role.value} value={role.value}>
+                    <div className="flex items-center gap-2">
+                      {React.createElement(role.icon, { className: "h-4 w-4" })}
+                      <div>
+                        <div className="font-medium">{role.label}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {role.description}
+                        </div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Department (only for dept_admin) */}
+          {formData.role === 'dept_admin' && (
+            <div className="space-y-2">
+              <Label htmlFor="department">Department *</Label>
+              <Select
+                value={formData.department}
+                onValueChange={(value) => handleInputChange('department', value)}
+                disabled={loading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEPARTMENTS.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Information */}
-            <div>
-              <h4 className="text-md font-medium text-gray-900 mb-4">
-                Basic Information
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
+          {/* Role Permissions Preview */}
+          {formData.role && (
+            <div className="rounded-lg border p-3 bg-muted/50">
+              <h4 className="font-medium text-sm mb-2">Permissions Preview</h4>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                {formData.role === 'super_admin' && (
+                  <>
+                    <div>• Full system access and administration</div>
+                    <div>• Can manage all admins and settings</div>
+                    <div>• Access to all financial data</div>
+                  </>
+                )}
+                {formData.role === 'director_finance' && (
+                  <>
+                    <div>• Financial management and reporting</div>
+                    <div>• Expense approval and tracking</div>
+                    <div>• Revenue analysis and statistics</div>
+                  </>
+                )}
+                {formData.role === 'college_admin' && (
+                  <>
+                    <div>• College-level payment management</div>
+                    <div>• College financial overview</div>
+                    <div>• College student data access</div>
+                  </>
+                )}
+                {formData.role === 'dept_admin' && (
+                  <>
+                    <div>• Department-specific payment management</div>
+                    <div>• Department student data access</div>
+                    <div>• Limited to {formData.department || 'selected department'}</div>
+                  </>
+                )}
+                {formData.role === 'general_admin' && (
+                  <>
+                    <div>• Basic administrative functions</div>
+                    <div>• Payment viewing and management</div>
+                    <div>• Limited system access</div>
+                  </>
+                )}
               </div>
             </div>
+          )}
 
-            {/* Password */}
-            <div>
-              <h4 className="text-md font-medium text-gray-900 mb-4">
-                Password
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Password *
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                    minLength={6}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm Password *
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        confirmPassword: e.target.value,
-                      })
-                    }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Role and Department */}
-            <div>
-              <h4 className="text-md font-medium text-gray-900 mb-4">
-                Role & Department
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Role *
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => handleRoleChange(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="super_admin">Super Admin</option>
-                    <option value="college_admin">College Admin</option>
-                    <option value="dept_admin">Department Admin</option>
-                    <option value="general_admin">General Admin</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.department}
-                    onChange={(e) =>
-                      setFormData({ ...formData, department: e.target.value })
-                    }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Only for department admins"
-                    disabled={formData.role !== "dept_admin"}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {formData.role === "dept_admin"
-                      ? "Required for department admins"
-                      : "Department can only be set for department admins"}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Permissions */}
-            <div>
-              <h4 className="text-md font-medium text-gray-900 mb-4">
-                Permissions
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="canViewPayments"
-                    checked={formData.permissions.canViewPayments}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        permissions: {
-                          ...formData.permissions,
-                          canViewPayments: e.target.checked,
-                        },
-                      })
-                    }
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor="canViewPayments"
-                    className="ml-2 block text-sm text-gray-900"
-                  >
-                    View Payments
-                  </label>
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="canExportData"
-                    checked={formData.permissions.canExportData}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        permissions: {
-                          ...formData.permissions,
-                          canExportData: e.target.checked,
-                        },
-                      })
-                    }
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor="canExportData"
-                    className="ml-2 block text-sm text-gray-900"
-                  >
-                    Export Data
-                  </label>
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="canManageAdmins"
-                    checked={formData.permissions.canManageAdmins}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        permissions: {
-                          ...formData.permissions,
-                          canManageAdmins: e.target.checked,
-                        },
-                      })
-                    }
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    disabled={formData.role !== "super_admin"}
-                  />
-                  <label
-                    htmlFor="canManageAdmins"
-                    className={`ml-2 block text-sm ${
-                      formData.role !== "super_admin"
-                        ? "text-gray-400"
-                        : "text-gray-900"
-                    }`}
-                  >
-                    Manage Admins
-                    {formData.role !== "super_admin" && " (Super Admin only)"}
-                  </label>
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="canViewAnalytics"
-                    checked={formData.permissions.canViewAnalytics}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        permissions: {
-                          ...formData.permissions,
-                          canViewAnalytics: e.target.checked,
-                        },
-                      })
-                    }
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor="canViewAnalytics"
-                    className="ml-2 block text-sm text-gray-900"
-                  >
-                    View Analytics
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
-              >
-                {loading ? "Registering..." : "Register Admin"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-    </div>
+          {/* Actions */}
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              className="flex-1"
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="flex-1"
+              disabled={loading}
+            >
+              {loading ? 'Creating...' : 'Create Admin'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
