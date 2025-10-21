@@ -68,7 +68,6 @@ export const AdminManagementTable: React.FC<AdminManagementTableProps> = ({
   onAdminUpdated,
   onAdminDeleted,
   onStatusToggle,
-  onRefetch,
 }) => {
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
   const [deletingAdmin, setDeletingAdmin] = useState<Admin | null>(null);

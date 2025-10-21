@@ -1,15 +1,28 @@
 // src/pages/AdminManagement.tsx
 
 import { type Admin, adminManagementService } from "@/services/admin.service";
-import { Shield, Building, GraduationCap, UserCog, Badge, Users, Plus } from "lucide-react";
+import {
+  Shield,
+  Building,
+  GraduationCap,
+  UserCog,
+  Users,
+  Plus,
+} from "lucide-react";
 import React, { useState, useEffect } from "react";
-import  { Button } from "../ui/button";
-import  { Card, CardHeader, CardTitle, CardContent, CardDescription } from "../ui/card";
+import { Button } from "../ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "../ui/card";
 import { AdminManagementTable } from "./AdminTable";
 import { CreateAdminForm } from "./RegisterAdminForm";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/useAuth";
-
+import { Badge } from "../ui/badge";
 
 export const AdminManagementPage: React.FC = () => {
   const { admin: currentAdmin } = useAuth();
@@ -30,7 +43,8 @@ export const AdminManagementPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await adminManagementService.getAllAdmins();
-      setAdmins(response);
+      // FIX: Extract admins array from response
+      setAdmins(response.admins || response || []);
     } catch (error: any) {
       console.error("Failed to load admins:", error);
       toast.error("Failed to load admins");
@@ -94,7 +108,7 @@ export const AdminManagementPage: React.FC = () => {
   };
 
   const getRoleBadge = (role: string) => {
-    const variants = {
+    const variants: { [key: string]: string } = {
       super_admin: "bg-purple-100 text-purple-800 border-purple-200",
       director_finance: "bg-blue-100 text-blue-800 border-blue-200",
       college_admin: "bg-green-100 text-green-800 border-green-200",
@@ -105,7 +119,9 @@ export const AdminManagementPage: React.FC = () => {
     return (
       <Badge
         variant="outline"
-        className={variants[role as keyof typeof variants]}
+        className={
+          variants[role] || "bg-gray-100 text-gray-800 border-gray-200"
+        }
       >
         <span className="flex items-center gap-1">
           {getRoleIcon(role)}

@@ -15,7 +15,6 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   value,
   subtitle,
   color = "blue",
-  icon
 }) => {
   const colorClasses = {
     blue: "border-l-blue-500",

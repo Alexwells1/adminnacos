@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { paymentService } from "@/services/admin.service";
-import type { PaginatedResponse, Payment } from "@/types/admin.types";
+import type { Payment } from "@/types/admin.types";
 import { usePaymentsCache } from "./usePaymentsCache";
 import { useAuth } from "@/contexts/useAuth";
 
@@ -65,8 +65,7 @@ const searchPayments = (payments: Payment[], query: string): Payment[] => {
 export const usePaymentsData = () => {
   // ALL HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP LEVEL
   const { admin, hasPermission } = useAuth();
-  const { CACHE_KEYS, getFromCache, saveToCache, clearPaymentsCache } =
-    usePaymentsCache();
+  const { saveToCache, clearPaymentsCache } = usePaymentsCache(); // FIX: Remove unused CACHE_KEYS and getFromCache
 
   // State declarations - ALL AT TOP LEVEL
   const [allPayments, setAllPayments] = useState<Payment[]>([]);
@@ -117,8 +116,8 @@ export const usePaymentsData = () => {
 
   // Use debounced filters
   const debouncedFilters = useDebounce(filters, 500);
-  // Use debounced search query
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  // FIX: Remove unused debouncedSearchQuery variable
+  useDebounce(searchQuery, 300); // This is used but we don't need to store the result
 
   // Apply client-side filters - useCallback at top level
   const applyClientSideFilters = useCallback(
@@ -257,7 +256,8 @@ export const usePaymentsData = () => {
     []
   );
 
-  // Safe cache saving function to handle quota issues
+  // FIX: Remove unused safeSaveToCache function since it's declared but never used
+  /*
   const safeSaveToCache = useCallback(
     (key: string, data: any) => {
       try {
@@ -278,6 +278,7 @@ export const usePaymentsData = () => {
     },
     [saveToCache, clearPaymentsCache]
   );
+  */
 
   // Function to fetch ALL payments from API (multiple pages if needed)
   const fetchAllPayments = useCallback(
@@ -285,7 +286,7 @@ export const usePaymentsData = () => {
       console.log("🌐 Starting to fetch ALL payments");
       const allPayments: Payment[] = [];
       let currentPage = 1;
-      let hasMorePages = true;
+      let hasMorePages = true; // This is boolean
       const limit = 100; // Fetch 100 per page to get all data efficiently
 
       while (hasMorePages) {
@@ -314,9 +315,10 @@ export const usePaymentsData = () => {
               `📄 Page ${currentPage}/${totalPages}, hasMore: ${hasMorePages}`
             );
           } else {
-            // If no pagination info, assume no more pages if we got fewer than limit
-            hasMorePages =
-              response.payments && response.payments.length === limit;
+            // FIX: Ensure we return only boolean, not boolean | undefined
+            hasMorePages = Boolean(
+              response.payments && response.payments.length === limit
+            );
             console.log(`📄 No pagination info, hasMore: ${hasMorePages}`);
           }
 
@@ -675,7 +677,7 @@ export const usePaymentsData = () => {
     pagination,
     searchQuery,
     admin,
-    hasPermission,
+    hasPermission: hasPermission || false, 
     handleSearch,
     handlePageChange,
     handleRefresh,

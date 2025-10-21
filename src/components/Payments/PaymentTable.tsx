@@ -1,6 +1,10 @@
 // src/components/Payments/PaymentTable.tsx
 import React, { useState } from "react";
-import type { Payment } from "../../types/admin.types";
+import type {
+  Payment,
+  PaymentDepartment,
+  CreatePaymentData,
+} from "../../types/admin.types";
 import { paymentService, receiptService } from "../../services/admin.service";
 
 import { Button } from "@/components/ui/button";
@@ -104,10 +108,10 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
 
     setActionLoading(selectedPayment._id);
     try {
-      const updates = {
+      const updates: Partial<CreatePaymentData> = {
         fullName: editForm.fullName,
         matricNumber: editForm.matricNumber,
-        department: editForm.department,
+        department: editForm.department as PaymentDepartment, // FIX: Cast to PaymentDepartment
         level: editForm.level,
         amount: parseFloat(editForm.amount),
         email: editForm.email || undefined,
@@ -130,17 +134,34 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
     setActionLoading(payment._id);
     try {
       // Get the receipt URL from backend
-      const receiptUrl = await receiptService.regenerateReceipt(
+      const receiptData = await receiptService.regenerateReceipt(
         payment.reference
       );
 
+      // FIX: Handle both string and object response types
+      let receiptUrl: string;
+
+      if (typeof receiptData === "string") {
+        receiptUrl = receiptData;
+      } else if (
+        receiptData &&
+        typeof receiptData === "object" &&
+        "receiptUrl" in receiptData
+      ) {
+        receiptUrl = (receiptData as any).receiptUrl;
+      } else {
+        throw new Error("Invalid receipt data format");
+      }
+
       // Open the receipt URL in a new tab
       if (receiptUrl) {
-        // If it's a relative URL, make it absolute
-        const absoluteUrl = receiptUrl.startsWith("http")
-          ? receiptUrl
-          : `${window.location.origin}${receiptUrl}`;
+        // FIX: Check if startsWith exists (it's a string method)
+        const absoluteUrl =
+          typeof receiptUrl === "string" && receiptUrl.startsWith("http")
+            ? receiptUrl
+            : `${window.location.origin}${receiptUrl}`;
 
+        // FIX: window.open expects string | URL | undefined
         window.open(absoluteUrl, "_blank", "noopener,noreferrer");
         toast.success("Receipt opened in new tab");
       } else {
@@ -248,19 +269,28 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
     });
   };
 
-  const DEPARTMENTS = [
-    { value: "COMSSA", label: "Computer Science (COMSSA)" },
-    { value: "SENIFSA", label: "Software Engineering (SENIFSA)" },
-    { value: "CYDASA", label: "Cyber Security (CYDASA)" },
-    { value: "ICITSA", label: "Information Technology (ICITSA)" },
-  ];
+ const DEPARTMENTS = [
+   { value: "Computer Science", label: "Computer Science (COMSSA)" },
+   {
+     value: "Software Engr & Information Systems",
+     label: "Software Engineering (SENIFSA)",
+   },
+   { value: "Cybersecurity & Data Science", label: "Cyber Security (CYDASA)" },
+   {
+     value: "ICT & Information Technology",
+     label: "Information Technology (ICITSA)",
+   },
+ ];
 
-  const LEVELS = [
-    { value: "100", label: "Level 100" },
-    { value: "200", label: "Level 200" },
-    { value: "300", label: "Level 300" },
-    { value: "400", label: "Level 400" },
-  ];
+
+
+ const LEVELS = [
+   { value: "100", label: "Level 100" },
+   { value: "200", label: "Level 200" },
+   { value: "200 D.E", label: "Level 200 D.E" },
+   { value: "300", label: "Level 300" },
+   { value: "400", label: "Level 400" },
+ ];
 
   if (loading) {
     return (

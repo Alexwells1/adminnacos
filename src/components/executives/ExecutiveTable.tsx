@@ -66,8 +66,11 @@ export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
     });
   };
 
+  // FIX: Properly type the variant mapping
   const getScopeBadgeVariant = (scope: string) => {
-    const scopeVariants: { [key: string]: string } = {
+    const scopeVariants: {
+      [key: string]: "default" | "destructive" | "outline" | "secondary";
+    } = {
       president: "destructive",
       vice_president: "default",
       secretary: "secondary",
@@ -164,6 +167,7 @@ export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
                   </div>
                 </td>
                 <td className="py-4 px-4">
+                  {/* FIX: Ensure the variant prop gets the correct type */}
                   <Badge variant={getScopeBadgeVariant(executive.scope)}>
                     {formatScopeLabel(executive.scope)}
                   </Badge>

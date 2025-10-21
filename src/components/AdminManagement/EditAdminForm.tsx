@@ -1,6 +1,9 @@
 // src/components/admin/EditAdminForm.tsx
 import React, { useState } from "react";
-import { type Admin, adminManagementService } from "../../services/admin.service";
+import {
+  type Admin,
+  adminManagementService,
+} from "../../services/admin.service";
 import {
   Dialog,
   DialogContent,
@@ -37,11 +40,12 @@ interface EditAdminFormProps {
   onCancel: () => void;
 }
 
+// FIX: Use proper department values that match your types
 const DEPARTMENTS = [
-  "Computer Science",
-  "Software Engineering",
-  "Cyber Security",
-  "Information Technology",
+  { value: "COMSSA", label: "Computer Science (COMSSA)" },
+  { value: "SENIFSA", label: "Software Engineering (SENIFSA)" },
+  { value: "CYDASA", label: "Cyber Security (CYDASA)" },
+  { value: "ICITSA", label: "Information Technology (ICITSA)" },
 ];
 
 const ROLES = [
@@ -58,6 +62,7 @@ export const EditAdminForm: React.FC<EditAdminFormProps> = ({
   onCancel,
 }) => {
   const [loading, setLoading] = useState(false);
+  // FIX: Properly type the form data to match UpdateAdminData
   const [formData, setFormData] = useState({
     name: admin.name,
     email: admin.email,
@@ -82,7 +87,26 @@ export const EditAdminForm: React.FC<EditAdminFormProps> = ({
     setLoading(true);
 
     try {
-      await adminManagementService.updateAdmin(admin._id, formData);
+      // FIX: Prepare data that matches UpdateAdminData type
+      const updateData = {
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        department: formData.department as
+          | "COMSSA"
+          | "ICITSA"
+          | "CYDASA"
+          | "SENIFSA"
+          | undefined,
+        isActive: formData.isActive,
+      };
+
+      // Clear department if not dept_admin
+      if (formData.role !== "dept_admin") {
+        updateData.department = undefined;
+      }
+
+      await adminManagementService.updateAdmin(admin._id, updateData);
       onSuccess();
     } catch (error: any) {
       console.error("Failed to update admin:", error);
@@ -101,12 +125,15 @@ export const EditAdminForm: React.FC<EditAdminFormProps> = ({
     }));
   };
 
+  // FIX: Remove unused getRoleIcon function since it's not used in the component
+  /*
   const getRoleIcon = (roleValue: string) => {
     const role = ROLES.find((r) => r.value === roleValue);
     return role
       ? React.createElement(role.icon, { className: "h-4 w-4" })
       : null;
   };
+  */
 
   return (
     <Dialog open onOpenChange={onCancel}>
@@ -195,8 +222,8 @@ export const EditAdminForm: React.FC<EditAdminFormProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   {DEPARTMENTS.map((dept) => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept}
+                    <SelectItem key={dept.value} value={dept.value}>
+                      {dept.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

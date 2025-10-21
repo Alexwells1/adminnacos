@@ -23,22 +23,16 @@ import { useAuth } from "@/contexts/useAuth";
 import { Plus, CreditCard, User, Mail } from "lucide-react";
 import { toast } from "sonner";
 
-
 interface CreateManualPaymentProps {
   onPaymentCreated: () => void;
 }
 
+// FIX: Use proper department enum values that match your types
 const DEPARTMENTS = [
-  { value: "Computer Science", label: "Computer Science (COMSSA)" },
-  {
-    value: "Software Engr & Information Systems",
-    label: "Software Engineering (SENIFSA)",
-  },
-  { value: "Cybersecurity & Data Science", label: "Cyber Security (CYDASA)" },
-  {
-    value: "ICT & Information Technology",
-    label: "Information Technology (ICITSA)",
-  },
+  { value: "COMSSA", label: "Computer Science (COMSSA)" },
+  { value: "SENIFSA", label: "Software Engineering (SENIFSA)" },
+  { value: "CYDASA", label: "Cyber Security (CYDASA)" },
+  { value: "ICITSA", label: "Information Technology (ICITSA)" },
 ];
 
 const LEVELS = [
@@ -91,10 +85,8 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
     return [];
   };
 
- 
-
+  // FIX: Remove unused allowedDepartments variable
   const allowedPaymentTypes = getAllowedPaymentTypes();
-  const allowedDepartments = admin?.role === "dept_admin" ? DEPARTMENTS : [];
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({
@@ -115,7 +107,7 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
         !formData.amount ||
         !formData.type
       ) {
-    toast.error("Please fill in all required fields");
+        toast.error("Please fill in all required fields");
         return;
       }
 
@@ -131,10 +123,15 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
         return;
       }
 
+      // FIX: Prepare payment data with proper department type
       const paymentData = {
         fullName: formData.fullName,
         matricNumber: formData.matricNumber,
-        department: formData.department,
+        department: formData.department as
+          | "COMSSA"
+          | "ICITSA"
+          | "CYDASA"
+          | "SENIFSA", // Type assertion
         level: formData.level,
         amount: parseFloat(formData.amount),
         type: formData.type as "college" | "departmental",
@@ -267,33 +264,31 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                 </Select>
               </div>
 
-              
-                <div className="space-y-2">
-                  <Label htmlFor="department">
-                    Department{" "}
-                    {formData.type === "departmental" && (
-                      <span className="text-red-500">*</span>
-                    )}
-                  </Label>
-                  <Select
-                    value={formData.department}
-                    onValueChange={(value) =>
-                      handleInputChange("department", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DEPARTMENTS.map((dept) => (
-                        <SelectItem key={dept.value} value={dept.value}>
-                          {dept.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-             
+              <div className="space-y-2">
+                <Label htmlFor="department">
+                  Department{" "}
+                  {formData.type === "departmental" && (
+                    <span className="text-red-500">*</span>
+                  )}
+                </Label>
+                <Select
+                  value={formData.department}
+                  onValueChange={(value) =>
+                    handleInputChange("department", value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map((dept) => (
+                      <SelectItem key={dept.value} value={dept.value}>
+                        {dept.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
