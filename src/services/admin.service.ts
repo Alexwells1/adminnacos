@@ -39,7 +39,7 @@ export type {
 // Auth Service
 export const authService = {
   login: async (email: string, password: string): Promise<LoginResponse> => {
-    const response = await axios.post<LoginResponse>("/admin/auth/login", {
+    const response = await axios.post<LoginResponse>("/auth/login", {
       email,
       password,
     });
@@ -48,13 +48,13 @@ export const authService = {
 
   logout: async (): Promise<{ message: string }> => {
     const response = await axios.post<{ message: string }>(
-      "/admin/auth/logout"
+      "/auth/logout"
     );
     return response.data;
   },
 
   getProfile: async (): Promise<{ admin: Admin }> => {
-    const response = await axios.get<{ admin: Admin }>("/admin/auth/profile");
+    const response = await axios.get<{ admin: Admin }>("/auth/profile");
     return response.data;
   },
 
@@ -63,7 +63,7 @@ export const authService = {
     email?: string;
   }): Promise<{ admin: Admin }> => {
     const response = await axios.put<{ admin: Admin }>(
-      "/admin/auth/profile",
+      "/auth/profile",
       updates
     );
     return response.data;
