@@ -18,46 +18,44 @@ export const AdminLogin: React.FC = () => {
   // Get the intended destination or default to dashboard
   const from = location.state?.from?.pathname || "/admin/dashboard";
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+ const handleSubmit = async (e: React.FormEvent) => {
+   e.preventDefault();
 
-    // Basic validation
-    if (!email || !password) {
-      setError("Please fill in all fields");
-      return;
-    }
+   if (!email || !password) {
+     setError("Please fill in all fields");
+     return;
+   }
 
-    setLoading(true);
-    setError("");
+   setLoading(true);
+   setError("");
 
-    try {
-      // Use the auth service to login
-      const result = await authService.login(email, password);
+   try {
+     // Use the auth service to login
+     const result = await authService.login(email, password);
 
-      // Store token and admin data
-      localStorage.setItem("adminToken", result.token);
-      localStorage.setItem("adminData", JSON.stringify(result.admin));
+     // 🔥 CRITICAL: Store token and admin data for ALL browsers
+     localStorage.setItem("adminToken", result.token);
+     localStorage.setItem("adminData", JSON.stringify(result.admin));
 
-      // Update auth context
-      login(result.admin, result.token);
+     // Update auth context
+     login(result.admin, result.token);
 
-      // Navigate to intended destination
-      navigate(from, { replace: true });
-    } catch (err: any) {
-      console.error("Login error:", err);
+     // Navigate to intended destination
+     navigate(from, { replace: true });
+   } catch (err: any) {
+     console.error("Login error:", err);
 
-      // Handle different error types
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.message) {
-        setError(err.message);
-      } else {
-        setError("Login failed. Please try again.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+     if (err.response?.data?.message) {
+       setError(err.response.data.message);
+     } else if (err.message) {
+       setError(err.message);
+     } else {
+       setError("Login failed. Please try again.");
+     }
+   } finally {
+     setLoading(false);
+   }
+ };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);

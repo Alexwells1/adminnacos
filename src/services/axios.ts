@@ -5,22 +5,19 @@ const BASE_URL = "https://colcom-backend.onrender.com/api";
 
 const instance = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true,
+  withCredentials: true, // For desktop browsers
   timeout: 30000,
 });
 
-// Enhanced request interceptor for mobile browser compatibility
+// Request interceptor
 instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("adminToken");
 
-    // For mobile browsers that block cookies, we'll use dual strategy
+    // 🔥 ALWAYS add Authorization header for mobile browsers
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
-    // Ensure credentials are always included
-    config.withCredentials = true;
 
     return config;
   },
@@ -29,25 +26,15 @@ instance.interceptors.request.use(
   }
 );
 
-// Enhanced response interceptor
+// Response interceptor
 instance.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      // Clear all auth data
+  (error) => {
+    if (error.response?.status === 401) {
       localStorage.removeItem("adminToken");
       localStorage.removeItem("adminData");
-
-      // Redirect to login
-      if (typeof window !== "undefined") {
-        window.location.href = "/admin/login";
-      }
+      window.location.href = "/admin/login";
     }
-
     return Promise.reject(error);
   }
 );

@@ -40,28 +40,22 @@ export type {
 export const authService = {
   login: async (email: string, password: string): Promise<LoginResponse> => {
     const response = await axios.post<LoginResponse>("/auth/login", {
+      // 🔥 FIXED ENDPOINT
       email,
       password,
     });
-
-    // 🔥 Store the token for mobile browsers
-    if (response.data.token) {
-      localStorage.setItem("adminToken", response.data.token);
-      localStorage.setItem("adminData", JSON.stringify(response.data.admin));
-    }
     return response.data;
   },
 
   logout: async (): Promise<{ message: string }> => {
-    const response = await axios.post<{ message: string }>("/auth/logout");
-    // Clear frontend storage
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminData");
+    const response = await axios.post<{ message: string }>(
+      "/auth/logout" // 🔥 FIXED ENDPOINT
+    );
     return response.data;
   },
 
   getProfile: async (): Promise<{ admin: Admin }> => {
-    const response = await axios.get<{ admin: Admin }>("/auth/profile");
+    const response = await axios.get<{ admin: Admin }>("/auth/profile"); // 🔥 FIXED ENDPOINT
     return response.data;
   },
 
@@ -70,7 +64,7 @@ export const authService = {
     email?: string;
   }): Promise<{ admin: Admin }> => {
     const response = await axios.put<{ admin: Admin }>(
-      "/auth/profile",
+      "/auth/profile", // 🔥 FIXED ENDPOINT
       updates
     );
     return response.data;
@@ -81,7 +75,7 @@ export const authService = {
     newPassword: string
   ): Promise<{ message: string }> => {
     const response = await axios.patch<{ message: string }>(
-      "/admin/auth/profile/password",
+      "/auth/profile/password", // 🔥 FIXED ENDPOINT
       {
         currentPassword,
         newPassword,
@@ -90,7 +84,6 @@ export const authService = {
     return response.data;
   },
 };
-
 // Admin Management Service
 export const adminManagementService = {
   registerAdmin: async (
