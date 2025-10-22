@@ -119,7 +119,6 @@ export const useDepartmentData = () => {
 
   const loadDashboardData = async (forceRefresh = false) => {
     if (!departmentName) {
-      console.error("❌ No department found for user:", user);
       toast.error("No department assigned to your account");
       return;
     }
@@ -226,7 +225,6 @@ export const useDepartmentData = () => {
         toast.success("Department data refreshed successfully");
       }
     } catch (error) {
-      console.error("Failed to load dashboard data:", error);
       const errorMessage = "Failed to load department data";
       if (forceRefresh) {
         toast.error(errorMessage);

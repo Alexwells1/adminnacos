@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardHeader } from "@/components/Dashboard/superadmin/DashboardHeader";
 import { DashboardSkeleton } from "@/components/Dashboard/superadmin/DashboardSkeleton";
@@ -23,17 +23,6 @@ const SuperAdminDashboard: React.FC = () => {
     recalculateStats,
     isDashboardCacheValid,
   } = useDashboardData();
-
-  // 🧠 Log summary updates
-  useEffect(() => {
-    console.group("📊 Dashboard Data Summary");
-    console.log("📈 Stats:", stats);
-    console.log("💰 Financial:", financialStats);
-    console.log("🧾 Recent Payments:", recentPayments?.length || 0);
-    console.log("🕒 Last Updated:", lastUpdated);
-    console.log("✅ Cache Valid:", isDashboardCacheValid());
-    console.groupEnd();
-  }, [stats, financialStats, recentPayments, lastUpdated]);
 
   if (loading) return <DashboardSkeleton />;
   if (!stats || !financialStats)

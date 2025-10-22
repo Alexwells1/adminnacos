@@ -37,7 +37,7 @@ export const useDashboardData = () => {
       try {
         const canUseCache = isCacheValid(CACHE_KEYS.DASHBOARD_STATS);
 
-        // ✅ Load from cache if valid
+        // Load from cache if valid
         if (!forceRefresh && canUseCache) {
           const cachedStats = getFromCache<DashboardStats>(
             CACHE_KEYS.DASHBOARD_STATS
@@ -57,13 +57,11 @@ export const useDashboardData = () => {
             setFinancialStats(cachedFinancial);
             setRecentPayments(cachedPayments || []);
             setLastUpdated(cachedLastUpdated || "");
-            console.log("✅ Dashboard loaded from cache");
             return;
           }
         }
 
-        // 🧠 Fetch fresh data
-        console.log("🌐 Fetching fresh dashboard data...");
+        // Fetch fresh data
         const [statsData, financeData, paymentsResponse] = await Promise.all([
           dashboardService.getSuperAdminStats(),
           dashboardService.getFinancialStats(),
@@ -77,7 +75,7 @@ export const useDashboardData = () => {
         const paymentsArray =
           paymentsResponse?.payments || paymentsResponse?.data || [];
 
-        // ✅ Update states
+        // Update states
         setStats(statsData);
         setFinancialStats(financeData);
         setRecentPayments(paymentsArray);
@@ -88,16 +86,14 @@ export const useDashboardData = () => {
         });
         setLastUpdated(now);
 
-        // 💾 Cache data
+        // Cache data
         saveToCache(CACHE_KEYS.DASHBOARD_STATS, statsData);
         saveToCache(CACHE_KEYS.FINANCIAL_STATS, financeData);
         saveToCache(CACHE_KEYS.RECENT_PAYMENTS, paymentsArray);
         saveToCache(CACHE_KEYS.LAST_UPDATED, now);
 
         if (forceRefresh) toast.success("Dashboard updated successfully");
-        console.log("✅ Dashboard data fetched successfully");
       } catch (err) {
-        console.error("❌ Error loading dashboard data:", err);
         toast.error("Failed to load dashboard data.");
       } finally {
         setLoading(false);
@@ -107,7 +103,7 @@ export const useDashboardData = () => {
     [loading, isRefreshing, isCacheValid, getFromCache, saveToCache, CACHE_KEYS]
   );
 
-  // 🧩 Initial load
+  // Initial load
   useEffect(() => {
     if (!initialLoadTriggered.current) {
       initialLoadTriggered.current = true;
@@ -118,13 +114,12 @@ export const useDashboardData = () => {
   const recalculateStats = useCallback(async () => {
     try {
       setIsRefreshing(true);
-      console.log("🔄 Recalculating financial stats...");
       await financialService.recalculateFinancialStats();
       clearCache();
       await loadDashboardData(true);
+      toast.success("Financial stats recalculated successfully");
     } catch (error) {
-      console.error("❌ Recalculation failed:", error);
-      toast.error("Recalculation failed");
+      toast.error("Failed to recalculate financial stats");
     } finally {
       setIsRefreshing(false);
     }
@@ -144,4 +139,3 @@ export const useDashboardData = () => {
     isDashboardCacheValid,
   };
 };
-                                              

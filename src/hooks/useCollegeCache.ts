@@ -46,9 +46,6 @@ export const useCollegeCache = () => {
     try {
       const testData = JSON.stringify({ data, timestamp: Date.now() });
       if (testData.length > 2 * 1024 * 1024) {
-        console.warn(
-          `⚠️ Cache data too large for ${cacheKey}: ${testData.length} bytes`
-        );
         return false;
       }
 
@@ -59,8 +56,6 @@ export const useCollegeCache = () => {
       localStorage.setItem(cacheKey, JSON.stringify(cacheData));
       return true;
     } catch (error) {
-      console.warn("Failed to save to cache:", error);
-
       if (
         error instanceof DOMException &&
         error.name === "QuotaExceededError"
@@ -96,10 +91,9 @@ export const useCollegeCache = () => {
 
       keysToRemove.slice(0, 3).forEach((key) => {
         localStorage.removeItem(key);
-        console.log(`🧹 Removed old cache: ${key}`);
       });
     } catch (error) {
-      console.warn("Failed to clear old cache entries:", error);
+      // Silently fail cache cleanup
     }
   }, []);
 
@@ -108,9 +102,8 @@ export const useCollegeCache = () => {
       Object.values(CACHE_KEYS).forEach((key) => {
         localStorage.removeItem(key);
       });
-      console.log("🧹 College admin cache cleared");
     } catch (error) {
-      console.warn("Failed to clear college cache:", error);
+      // Silently fail cache clearing
     }
   }, []);
 

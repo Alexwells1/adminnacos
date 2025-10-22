@@ -71,7 +71,6 @@ export const useFinancialStats = () => {
           }
         }
       } catch (error: any) {
-        console.error("Failed to load financial stats:", error);
         const errorMessage =
           error.response?.data?.message ||
           "Failed to load financial statistics";

@@ -65,9 +65,7 @@ const searchPayments = (payments: Payment[], query: string): Payment[] => {
 export const usePaymentsData = () => {
   // ALL HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP LEVEL
   const { admin, hasPermission } = useAuth();
-  const {  clearPaymentsCache } = usePaymentsCache(); 
-
-
+  const { clearPaymentsCache } = usePaymentsCache();
 
   // State declarations - ALL AT TOP LEVEL
   const [allPayments, setAllPayments] = useState<Payment[]>([]);
@@ -96,7 +94,6 @@ export const usePaymentsData = () => {
       sort: "newest",
     };
 
-    // This is OK because it's inside useState initializer
     if (admin?.role === "college_admin") {
       defaultFilters.type = "college";
     } else if (admin?.role === "dept_admin") {
@@ -118,8 +115,7 @@ export const usePaymentsData = () => {
 
   // Use debounced filters
   const debouncedFilters = useDebounce(filters, 500);
-  // FIX: Remove unused debouncedSearchQuery variable
-  useDebounce(searchQuery, 300); // This is used but we don't need to store the result
+  useDebounce(searchQuery, 300);
 
   // Apply client-side filters - useCallback at top level
   const applyClientSideFilters = useCallback(
@@ -128,159 +124,84 @@ export const usePaymentsData = () => {
       currentFilters: any,
       currentSearchQuery: string = ""
     ) => {
-      console.log(
-        "🔍 Applying client-side filters to",
-        payments.length,
-        "payments"
-      );
-      console.log("📋 Current filters:", currentFilters);
-      console.log("🔎 Search query:", currentSearchQuery);
-
       let filtered = [...payments];
 
       // Apply search first if there's a query
       if (currentSearchQuery.trim()) {
-        console.log("🔍 Applying search filter:", currentSearchQuery);
-        const beforeSearch = filtered.length;
         filtered = searchPayments(filtered, currentSearchQuery);
-        console.log(
-          "🔍 Search filter result:",
-          beforeSearch,
-          "->",
-          filtered.length,
-          "payments"
-        );
       }
 
       // Level filter - client side
       if (currentFilters.level !== "all") {
-        console.log("🎚️ Filtering by level:", currentFilters.level);
-        const beforeLevel = filtered.length;
         filtered = filterPaymentsByLevel(filtered, currentFilters.level);
-        console.log(
-          "🎚️ Level filter result:",
-          beforeLevel,
-          "->",
-          filtered.length,
-          "payments"
-        );
       }
 
       // Type filter
       if (currentFilters.type !== "all") {
-        console.log("💰 Filtering by type:", currentFilters.type);
-        const beforeType = filtered.length;
         filtered = filtered.filter(
           (payment) => payment.type === currentFilters.type
-        );
-        console.log(
-          "💰 Type filter result:",
-          beforeType,
-          "->",
-          filtered.length,
-          "payments"
         );
       }
 
       // Department filter
       if (currentFilters.department !== "all") {
-        console.log("🏢 Filtering by department:", currentFilters.department);
-        const beforeDept = filtered.length;
         filtered = filtered.filter(
           (payment) => payment.department === currentFilters.department
-        );
-        console.log(
-          "🏢 Department filter result:",
-          beforeDept,
-          "->",
-          filtered.length,
-          "payments"
         );
       }
 
       // Date range filter
       if (currentFilters.startDate) {
-        console.log("📅 Filtering by start date:", currentFilters.startDate);
-        const beforeStartDate = filtered.length;
         const startDate = new Date(currentFilters.startDate);
         filtered = filtered.filter((payment) => {
           const paymentDate = new Date(payment.createdAt);
           return paymentDate >= startDate;
         });
-        console.log(
-          "📅 Start date filter result:",
-          beforeStartDate,
-          "->",
-          filtered.length,
-          "payments"
-        );
       }
 
       if (currentFilters.endDate) {
-        console.log("📅 Filtering by end date:", currentFilters.endDate);
-        const beforeEndDate = filtered.length;
         const endDate = new Date(currentFilters.endDate);
-        endDate.setHours(23, 59, 59, 999); // End of day
+        endDate.setHours(23, 59, 59, 999);
         filtered = filtered.filter((payment) => {
           const paymentDate = new Date(payment.createdAt);
           return paymentDate <= endDate;
         });
-        console.log(
-          "📅 End date filter result:",
-          beforeEndDate,
-          "->",
-          filtered.length,
-          "payments"
-        );
       }
 
       // Sort
       if (currentFilters.sort === "newest") {
-        console.log("🔄 Sorting by newest");
         filtered.sort(
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
       } else if (currentFilters.sort === "oldest") {
-        console.log("🔄 Sorting by oldest");
         filtered.sort(
           (a, b) =>
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
       } else if (currentFilters.sort === "amount") {
-        console.log("🔄 Sorting by amount");
         filtered.sort((a, b) => b.amount - a.amount);
       }
 
-      console.log("✅ Final filtered result:", filtered.length, "payments");
       return filtered;
     },
     []
   );
 
-
-
   // Function to fetch ALL payments from API (multiple pages if needed)
   const fetchAllPayments = useCallback(
     async (params: any): Promise<Payment[]> => {
-      console.log("🌐 Starting to fetch ALL payments");
       const allPayments: Payment[] = [];
       let currentPage = 1;
-      let hasMorePages = true; // This is boolean
-      const limit = 100; // Fetch 100 per page to get all data efficiently
+      let hasMorePages = true;
+      const limit = 100;
 
       while (hasMorePages) {
         try {
-          console.log(`📡 Fetching page ${currentPage} with limit ${limit}`);
           const response = await paymentService.getPayments({
             ...params,
             page: currentPage.toString(),
             limit: limit.toString(),
-          });
-
-          console.log(`📥 Page ${currentPage} response:`, {
-            paymentsCount: response.payments?.length || 0,
-            pagination: response.pagination,
           });
 
           if (response.payments && response.payments.length > 0) {
@@ -291,34 +212,22 @@ export const usePaymentsData = () => {
           if (response.pagination) {
             const totalPages = response.pagination.totalPages || 0;
             hasMorePages = currentPage < totalPages;
-            console.log(
-              `📄 Page ${currentPage}/${totalPages}, hasMore: ${hasMorePages}`
-            );
           } else {
-            // FIX: Ensure we return only boolean, not boolean | undefined
             hasMorePages = Boolean(
               response.payments && response.payments.length === limit
             );
-            console.log(`📄 No pagination info, hasMore: ${hasMorePages}`);
           }
 
           currentPage++;
 
           // Safety check to prevent infinite loops
           if (currentPage > 50) {
-            console.warn("⚠️ Safety break: too many pages fetched");
             break;
           }
         } catch (error) {
-          console.error(`❌ Failed to fetch page ${currentPage}:`, error);
           break;
         }
       }
-
-      console.log("✅ Finished fetching ALL payments:", {
-        totalFetched: allPayments.length,
-        pagesFetched: currentPage - 1,
-      });
 
       return allPayments;
     },
@@ -330,19 +239,10 @@ export const usePaymentsData = () => {
       const pageToLoad = targetPage || pagination.page;
       const startTime = performance.now();
 
-      console.log("🚀 loadPayments called with:", {
-        isSearch,
-        targetPage,
-        pageToLoad,
-        filters,
-        searchQuery,
-      });
-
       if (!isSearch) {
         setLoading(true);
       }
 
-      console.log("🔄 Fetching fresh data from API");
       setProgress(0);
       setCacheStatus("none");
 
@@ -362,20 +262,14 @@ export const usePaymentsData = () => {
         if (filters.startDate) params.startDate = filters.startDate;
         if (filters.endDate) params.endDate = filters.endDate;
 
-        console.log("📡 API call params:", params);
-
         // Only fetch ALL payments if we don't have them already or filters changed
         if (
           allPayments.length === 0 ||
           JSON.stringify(previousFiltersRef.current) !== JSON.stringify(filters)
         ) {
-          console.log(
-            "🎯 Fetching ALL payments for complete client-side filtering"
-          );
           paymentsData = await fetchAllPayments(params);
-          previousFiltersRef.current = { ...filters }; // Update previous filters
+          previousFiltersRef.current = { ...filters };
         } else {
-          console.log("📦 Using existing allPayments data");
           paymentsData = allPayments;
         }
 
@@ -385,10 +279,6 @@ export const usePaymentsData = () => {
         const endTime = performance.now();
         const duration = endTime - startTime;
         setLoadTime(duration);
-
-        console.log("📥 Final payments data:", {
-          totalPayments: paymentsData.length,
-        });
 
         // Only update allPayments if we fetched new data
         if (paymentsData !== allPayments) {
@@ -401,23 +291,11 @@ export const usePaymentsData = () => {
           filters,
           searchQuery
         );
-        console.log(
-          "🎯 After client-side filtering:",
-          clientFiltered.length,
-          "payments"
-        );
         setFilteredPayments(clientFiltered);
 
         // Update pagination based on filtered results
         const totalFiltered = clientFiltered.length;
         const totalPages = Math.ceil(totalFiltered / pagination.limit);
-
-        console.log("📊 Pagination update:", {
-          total: totalFiltered,
-          totalPages: totalPages,
-          currentPage: pageToLoad,
-          limit: pagination.limit,
-        });
 
         setPagination({
           total: totalFiltered,
@@ -437,8 +315,6 @@ export const usePaymentsData = () => {
         const endTime = performance.now();
         const duration = endTime - startTime;
         setLoadTime(duration);
-
-        console.error("❌ Failed to load payments:", error);
 
         if (error.response?.status === 403) {
           toast.error("You don't have permission to view these payments.");
@@ -468,22 +344,18 @@ export const usePaymentsData = () => {
 
   const handleSearch = useCallback(
     async (query: string) => {
-      console.log("🔍 handleSearch called with:", query);
       setSearchLoading(true);
       setSearchQuery(query);
 
       // If search is cleared, reload payments
       if (!query.trim()) {
-        console.log("🔍 Clearing search");
         setSearchQuery("");
-        // We don't need to reload payments here - the useEffect will handle it
         setSearchLoading(false);
         return;
       }
 
       // For search, we don't need to reload from API if we already have data
       if (allPayments.length > 0) {
-        console.log("🔍 Using existing data for search");
         const clientFiltered = applyClientSideFilters(
           allPayments,
           filters,
@@ -498,13 +370,11 @@ export const usePaymentsData = () => {
           ...prev,
           total: totalFiltered,
           totalPages: totalPages,
-          page: 1, // Reset to first page when searching
+          page: 1,
         }));
 
         setSearchLoading(false);
       } else {
-        // If no data available, trigger full load
-        console.log("🔍 No data available, triggering full load with search");
         await loadPayments(true);
       }
     },
@@ -519,14 +389,9 @@ export const usePaymentsData = () => {
 
   const handlePageChange = useCallback(
     (newPage: number) => {
-      console.log("📄 handlePageChange called with:", newPage);
-
-      // Only update pagination, don't trigger full reload if we have data
       if (allPayments.length > 0) {
-        console.log("📄 Using existing data for page change");
         setPagination((prev) => ({ ...prev, page: newPage }));
       } else {
-        console.log("📄 No data available, triggering full load");
         setPagination((prev) => ({ ...prev, page: newPage }));
       }
     },
@@ -534,20 +399,18 @@ export const usePaymentsData = () => {
   );
 
   const handleRefresh = useCallback(() => {
-    console.log("🔄 handleRefresh called");
     setRefreshing(true);
     clearPaymentsCache();
     setSearchQuery("");
-    previousFiltersRef.current = null; // Reset previous filters
+    previousFiltersRef.current = null;
     loadPayments();
     toast.info("Payments cache cleared and refreshing...");
   }, [clearPaymentsCache, loadPayments]);
 
   const handlePaymentCreated = useCallback(() => {
-    console.log("💰 handlePaymentCreated called");
     clearPaymentsCache();
     setSearchQuery("");
-    previousFiltersRef.current = null; // Reset previous filters
+    previousFiltersRef.current = null;
     loadPayments();
     toast.success("Payment created successfully. Cache cleared.");
   }, [clearPaymentsCache, loadPayments]);
@@ -558,23 +421,12 @@ export const usePaymentsData = () => {
     const endIndex = startIndex + pagination.limit;
     const paginated = filteredPayments.slice(startIndex, endIndex);
 
-    console.log("📄 getPaginatedPayments:", {
-      totalFiltered: filteredPayments.length,
-      page: pagination.page,
-      limit: pagination.limit,
-      startIndex,
-      endIndex,
-      paginatedCount: paginated.length,
-    });
-
     return paginated;
   }, [filteredPayments, pagination.page, pagination.limit]);
 
   // Apply client-side filters whenever filters or search query change
   useEffect(() => {
-    console.log("🎛️ Filters or search changed:", { filters, searchQuery });
     if (allPayments.length > 0) {
-      console.log("🔄 Re-applying filters to", allPayments.length, "payments");
       const clientFiltered = applyClientSideFilters(
         allPayments,
         filters,
@@ -584,18 +436,12 @@ export const usePaymentsData = () => {
 
       // Update pagination based on filtered results
       const totalPages = Math.ceil(clientFiltered.length / pagination.limit);
-      console.log(
-        "📊 Filter update - total:",
-        clientFiltered.length,
-        "pages:",
-        totalPages
-      );
 
       setPagination((prev) => ({
         ...prev,
         total: clientFiltered.length,
         totalPages: totalPages,
-        page: 1, // Reset to first page when filters or search change
+        page: 1,
       }));
     }
   }, [
@@ -606,41 +452,17 @@ export const usePaymentsData = () => {
     pagination.limit,
   ]);
 
-  // Main useEffect for loading payments - FIXED to prevent infinite loops
+  // Main useEffect for loading payments
   useEffect(() => {
-    // Only load payments on initial load or when filters change
-    // NOT when only pagination or search changes
     const shouldLoad =
       isInitialLoadRef.current ||
       JSON.stringify(previousFiltersRef.current) !==
         JSON.stringify(debouncedFilters);
 
     if (shouldLoad) {
-      console.log("🔄 Main useEffect triggered - loading payments");
       loadPayments();
-    } else {
-      console.log(
-        "🔄 Main useEffect triggered - skipping load (only search or pagination changed)"
-      );
     }
   }, [debouncedFilters, loadPayments]);
-
-  // Log state changes
-  useEffect(() => {
-    console.log("📊 State update:", {
-      allPayments: allPayments.length,
-      filteredPayments: filteredPayments.length,
-      pagination,
-      loading,
-      searchQuery,
-    });
-  }, [
-    allPayments.length,
-    filteredPayments.length,
-    pagination,
-    loading,
-    searchQuery,
-  ]);
 
   return {
     payments: getPaginatedPayments(),
@@ -657,7 +479,7 @@ export const usePaymentsData = () => {
     pagination,
     searchQuery,
     admin,
-    hasPermission: hasPermission || false, 
+    hasPermission: hasPermission || false,
     handleSearch,
     handlePageChange,
     handleRefresh,

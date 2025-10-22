@@ -82,7 +82,6 @@ export const useExecutivesData = () => {
           toast.success("Executives data refreshed successfully");
         }
       } catch (error: any) {
-        console.error("Failed to load executives:", error);
         toast.error("Failed to load executives data");
       } finally {
         setLoading(false);

@@ -85,10 +85,24 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
     return false;
   };
 
-  const canDeletePayment = (payment: Payment): boolean => {
-    console.log("delete ", payment);
-    return admin?.role === "super_admin";
-  };
+ const canDeletePayment = (payment: Payment): boolean => {
+   if (admin?.role === "super_admin") {
+     return true;
+   }
+
+   if (
+     admin?.role === "dept_admin" &&
+     payment.department === admin.department
+   ) {
+     return true;
+   }
+
+   if (admin?.role === "college_admin" && payment.type === "college") {
+     return true;
+   }
+
+   return false;
+ };
 
   const handleEditPayment = (payment: Payment) => {
     setSelectedPayment(payment);
@@ -112,7 +126,7 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
       const updates: Partial<CreatePaymentData> = {
         fullName: editForm.fullName,
         matricNumber: editForm.matricNumber,
-        department: editForm.department as PaymentDepartment, // FIX: Cast to PaymentDepartment
+        department: editForm.department as PaymentDepartment,
         level: editForm.level,
         amount: parseFloat(editForm.amount),
         email: editForm.email || undefined,
@@ -124,7 +138,6 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
       setEditDialogOpen(false);
       onPaymentUpdate();
     } catch (error) {
-      console.error("Failed to update payment:", error);
       toast.error("Failed to update payment");
     } finally {
       setActionLoading(null);
@@ -134,12 +147,10 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
   const handleViewReceipt = async (payment: Payment) => {
     setActionLoading(payment._id);
     try {
-      // Get the receipt URL from backend
       const receiptData = await receiptService.regenerateReceipt(
         payment.reference
       );
 
-      // FIX: Handle both string and object response types
       let receiptUrl: string;
 
       if (typeof receiptData === "string") {
@@ -151,25 +162,22 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
       ) {
         receiptUrl = (receiptData as any).receiptUrl;
       } else {
-        throw new Error("Invalid receipt data format");
+        toast.error("Invalid receipt data format");
+        return;
       }
 
-      // Open the receipt URL in a new tab
       if (receiptUrl) {
-        // FIX: Check if startsWith exists (it's a string method)
         const absoluteUrl =
           typeof receiptUrl === "string" && receiptUrl.startsWith("http")
             ? receiptUrl
             : `${window.location.origin}${receiptUrl}`;
 
-        // FIX: window.open expects string | URL | undefined
         window.open(absoluteUrl, "_blank", "noopener,noreferrer");
         toast.success("Receipt opened in new tab");
       } else {
         toast.error("No receipt URL received");
       }
     } catch (error) {
-      console.error("Failed to view receipt:", error);
       toast.error("Failed to generate receipt");
     } finally {
       setActionLoading(null);
@@ -179,7 +187,6 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
   const handleDownloadReceipt = async (payment: Payment) => {
     setActionLoading(payment._id);
     try {
-      // Get the PDF blob directly
       const blob = await receiptService.getReceiptPDF(payment.reference);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -191,7 +198,6 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
       document.body.removeChild(a);
       toast.success("Receipt downloaded successfully");
     } catch (error) {
-      console.error("Failed to download receipt:", error);
       toast.error("Failed to download receipt");
     } finally {
       setActionLoading(null);
@@ -209,7 +215,6 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
       await receiptService.resendReceiptEmail(payment.reference);
       toast.success(`Receipt sent to ${payment.email}`);
     } catch (error) {
-      console.error("Failed to resend email:", error);
       toast.error("Failed to resend receipt email");
     } finally {
       setActionLoading(null);
@@ -224,17 +229,14 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
       setDeleteDialogOpen(false);
       onPaymentUpdate();
     } catch (error) {
-      console.error("Failed to delete payment:", error);
       toast.error("Failed to delete payment");
     } finally {
       setActionLoading(null);
     }
   };
 
-  // Add a direct view receipt function that uses the existing receipt if available
   const handleDirectViewReceipt = (payment: Payment) => {
     if (payment.receiptPdf) {
-      // If receipt is already stored as base64, open it directly
       const pdfWindow = window.open("", "_blank");
       if (pdfWindow) {
         pdfWindow.document.write(`
@@ -253,7 +255,6 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
         pdfWindow.document.close();
       }
     } else {
-      // If no receipt stored, regenerate it
       handleViewReceipt(payment);
     }
   };

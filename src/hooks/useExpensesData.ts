@@ -156,7 +156,6 @@ export const useExpensesData = () => {
           }
         }
       } catch (error: any) {
-        console.error("Failed to load expenses:", error);
         const errorMessage =
           error.response?.data?.message || "Failed to load expenses";
         toast.error(errorMessage);
@@ -183,7 +182,6 @@ export const useExpensesData = () => {
       await loadExpenses(true);
       toast.success("Expense created successfully!");
     } catch (error: any) {
-      console.error("Failed to create expense:", error);
       const errorMessage =
         error.response?.data?.message || "Failed to create expense";
       toast.error(errorMessage);
@@ -201,7 +199,6 @@ export const useExpensesData = () => {
       await loadExpenses(true);
       toast.success("Expense deleted successfully!");
     } catch (error: any) {
-      console.error("Failed to delete expense:", error);
       const errorMessage =
         error.response?.data?.message || "Failed to delete expense";
       toast.error(errorMessage);
