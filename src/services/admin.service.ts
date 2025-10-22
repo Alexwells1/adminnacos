@@ -140,36 +140,144 @@ export const adminManagementService = {
 // Dashboard Service
 export const dashboardService = {
   getSuperAdminStats: async (): Promise<DashboardStats> => {
-    const response = await axios.get<DashboardStats>(
-      "/admin/stats/super-admin"
-    );
-    return response.data;
+    console.log("📡 [dashboardService] Fetching Super Admin Stats...");
+    try {
+      const response = await axios.get<DashboardStats>(
+        "/admin/stats/super-admin"
+      );
+      console.log(
+        "✅ [dashboardService] Super Admin Stats Response:",
+        response.data
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ [dashboardService] Failed to fetch Super Admin Stats");
+      if (error.response) {
+        console.error("📥 Response Error:", {
+          status: error.response.status,
+          data: error.response.data,
+        });
+      } else if (error.request) {
+        console.error("🚫 No response received from server:", error.request);
+      } else {
+        console.error("⚠️ Request setup error:", error.message);
+      }
+      throw error;
+    }
   },
 
   getCollegeAdminStats: async (): Promise<DashboardStats> => {
-    const response = await axios.get<DashboardStats>(
-      "/admin/stats/college-admin"
-    );
-    return response.data;
+    console.log("📡 [dashboardService] Fetching College Admin Stats...");
+    try {
+      const response = await axios.get<DashboardStats>(
+        "/admin/stats/college-admin"
+      );
+      console.log(
+        "✅ [dashboardService] College Admin Stats Response:",
+        response.data
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        "❌ [dashboardService] Failed to fetch College Admin Stats"
+      );
+      if (error.response) {
+        console.error("📥 Response Error:", {
+          status: error.response.status,
+          data: error.response.data,
+        });
+      } else if (error.request) {
+        console.error("🚫 No response received from server:", error.request);
+      } else {
+        console.error("⚠️ Request setup error:", error.message);
+      }
+      throw error;
+    }
   },
 
   getDepartmentalAdminStats: async (): Promise<DashboardStats> => {
-    const response = await axios.get<DashboardStats>(
-      "/admin/stats/departmental-admin"
-    );
-    return response.data;
+    console.log("📡 [dashboardService] Fetching Departmental Admin Stats...");
+    try {
+      const response = await axios.get<DashboardStats>(
+        "/admin/stats/departmental-admin"
+      );
+      console.log(
+        "✅ [dashboardService] Departmental Admin Stats Response:",
+        response.data
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        "❌ [dashboardService] Failed to fetch Departmental Admin Stats"
+      );
+      if (error.response) {
+        console.error("📥 Response Error:", {
+          status: error.response.status,
+          data: error.response.data,
+        });
+      } else if (error.request) {
+        console.error("🚫 No response received from server:", error.request);
+      } else {
+        console.error("⚠️ Request setup error:", error.message);
+      }
+      throw error;
+    }
   },
 
   getGeneralAdminStats: async (): Promise<DashboardStats> => {
-    const response = await axios.get<DashboardStats>(
-      "/admin/stats/general-admin"
-    );
-    return response.data;
+    console.log("📡 [dashboardService] Fetching General Admin Stats...");
+    try {
+      const response = await axios.get<DashboardStats>(
+        "/admin/stats/general-admin"
+      );
+      console.log(
+        "✅ [dashboardService] General Admin Stats Response:",
+        response.data
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        "❌ [dashboardService] Failed to fetch General Admin Stats"
+      );
+      if (error.response) {
+        console.error("📥 Response Error:", {
+          status: error.response.status,
+          data: error.response.data,
+        });
+      } else if (error.request) {
+        console.error("🚫 No response received from server:", error.request);
+      } else {
+        console.error("⚠️ Request setup error:", error.message);
+      }
+      throw error;
+    }
   },
 
   getFinancialStats: async (): Promise<FinancialStats> => {
-    const response = await axios.get<FinancialStats>("/admin/financial/stats");
-    return response.data;
+    console.log("📡 [dashboardService] Fetching Financial Stats...");
+    try {
+      const response = await axios.get<FinancialStats>(
+        "/admin/financial/stats"
+      );
+      console.log(
+        "✅ [dashboardService] Financial Stats Response:",
+        response.data
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ [dashboardService] Failed to fetch Financial Stats");
+      if (error.response) {
+        console.error("📥 Response Error:", {
+          status: error.response.status,
+          data: error.response.data,
+        });
+      } else if (error.request) {
+        console.error("🚫 No response received from server:", error.request);
+      } else {
+        console.error("⚠️ Request setup error:", error.message);
+      }
+      throw error;
+    }
   },
 };
 

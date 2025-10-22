@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import {
   dashboardService,
@@ -13,55 +13,58 @@ import type {
 import { useDashboardCache } from "./useDashboardCache";
 
 export const useDashboardData = () => {
+  const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [financialStats, setFinancialStats] = useState<FinancialStats | null>(
     null
   );
   const [recentPayments, setRecentPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { CACHE_KEYS, isCacheValid, getFromCache, saveToCache, clearCache } =
     useDashboardCache();
 
-  const loadDashboardData = async (forceRefresh = false) => {
-    if (!forceRefresh) {
-      setLoading(true);
-    } else {
-      setIsRefreshing(true);
-    }
+  const initialLoadTriggered = useRef(false);
 
-    try {
-      if (!forceRefresh && isCacheValid(CACHE_KEYS.DASHBOARD_STATS)) {
-        const cachedStats = getFromCache<DashboardStats>(
-          CACHE_KEYS.DASHBOARD_STATS
-        );
-        const cachedFinancial = getFromCache<FinancialStats>(
-          CACHE_KEYS.FINANCIAL_STATS
-        );
-        const cachedPayments = getFromCache<Payment[]>(
-          CACHE_KEYS.RECENT_PAYMENTS
-        );
-        const cachedLastUpdated = getFromCache<string>(CACHE_KEYS.LAST_UPDATED);
+  const loadDashboardData = useCallback(
+    async (forceRefresh = false) => {
+      if ((loading && !forceRefresh) || (isRefreshing && forceRefresh)) return;
 
-        if (cachedStats && cachedFinancial && cachedPayments) {
-          setStats(cachedStats);
-          setFinancialStats(cachedFinancial);
-          setRecentPayments(cachedPayments);
-          setLastUpdated(cachedLastUpdated || new Date().toLocaleTimeString());
+      if (!forceRefresh) setLoading(true);
+      else setIsRefreshing(true);
 
-          if (!forceRefresh) {
-            setLoading(false);
-            setIsRefreshing(false);
-            setTimeout(() => loadDashboardData(true), 1000);
+      try {
+        const canUseCache = isCacheValid(CACHE_KEYS.DASHBOARD_STATS);
+
+        // ✅ Load from cache if valid
+        if (!forceRefresh && canUseCache) {
+          const cachedStats = getFromCache<DashboardStats>(
+            CACHE_KEYS.DASHBOARD_STATS
+          );
+          const cachedFinancial = getFromCache<FinancialStats>(
+            CACHE_KEYS.FINANCIAL_STATS
+          );
+          const cachedPayments = getFromCache<Payment[]>(
+            CACHE_KEYS.RECENT_PAYMENTS
+          );
+          const cachedLastUpdated = getFromCache<string>(
+            CACHE_KEYS.LAST_UPDATED
+          );
+
+          if (cachedStats && cachedFinancial) {
+            setStats(cachedStats);
+            setFinancialStats(cachedFinancial);
+            setRecentPayments(cachedPayments || []);
+            setLastUpdated(cachedLastUpdated || "");
+            console.log("✅ Dashboard loaded from cache");
             return;
           }
         }
-      }
 
-      const [dashboardData, financialData, recentPaymentsData] =
-        await Promise.all([
+        // 🧠 Fetch fresh data
+        console.log("🌐 Fetching fresh dashboard data...");
+        const [statsData, financeData, paymentsResponse] = await Promise.all([
           dashboardService.getSuperAdminStats(),
           dashboardService.getFinancialStats(),
           paymentService.getPayments({
@@ -71,71 +74,63 @@ export const useDashboardData = () => {
           }),
         ]);
 
-      setStats(dashboardData);
-      setFinancialStats(financialData);
-      setRecentPayments(recentPaymentsData.payments || []);
+        const paymentsArray =
+          paymentsResponse?.payments || paymentsResponse?.data || [];
 
-      const currentTime = new Date().toLocaleTimeString();
-      setLastUpdated(currentTime);
+        // ✅ Update states
+        setStats(statsData);
+        setFinancialStats(financeData);
+        setRecentPayments(paymentsArray);
 
-      saveToCache(CACHE_KEYS.DASHBOARD_STATS, dashboardData);
-      saveToCache(CACHE_KEYS.FINANCIAL_STATS, financialData);
-      saveToCache(
-        CACHE_KEYS.RECENT_PAYMENTS,
-        recentPaymentsData.payments || []
-      );
-      saveToCache(CACHE_KEYS.LAST_UPDATED, currentTime);
+        const now = new Date().toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        setLastUpdated(now);
 
-      if (forceRefresh) {
-        toast.success("Dashboard updated successfully");
+        // 💾 Cache data
+        saveToCache(CACHE_KEYS.DASHBOARD_STATS, statsData);
+        saveToCache(CACHE_KEYS.FINANCIAL_STATS, financeData);
+        saveToCache(CACHE_KEYS.RECENT_PAYMENTS, paymentsArray);
+        saveToCache(CACHE_KEYS.LAST_UPDATED, now);
+
+        if (forceRefresh) toast.success("Dashboard updated successfully");
+        console.log("✅ Dashboard data fetched successfully");
+      } catch (err) {
+        console.error("❌ Error loading dashboard data:", err);
+        toast.error("Failed to load dashboard data.");
+      } finally {
+        setLoading(false);
+        setIsRefreshing(false);
       }
-    } catch (error) {
-      console.error("Failed to load dashboard data:", error);
-      const errorMessage = "Failed to load dashboard data. Please try again.";
-      if (forceRefresh) {
-        toast.error(errorMessage);
-      } else {
-        toast.error(errorMessage);
-      }
-    } finally {
-      setLoading(false);
-      setIsRefreshing(false);
+    },
+    [loading, isRefreshing, isCacheValid, getFromCache, saveToCache, CACHE_KEYS]
+  );
+
+  // 🧩 Initial load
+  useEffect(() => {
+    if (!initialLoadTriggered.current) {
+      initialLoadTriggered.current = true;
+      loadDashboardData();
     }
-  };
+  }, [loadDashboardData]);
 
-  const recalculateStats = async () => {
+  const recalculateStats = useCallback(async () => {
     try {
       setIsRefreshing(true);
+      console.log("🔄 Recalculating financial stats...");
       await financialService.recalculateFinancialStats();
       clearCache();
       await loadDashboardData(true);
-      toast.success("Statistics recalculated successfully");
     } catch (error) {
-      console.error("Failed to recalculate stats:", error);
-      toast.error("Failed to recalculate statistics");
+      console.error("❌ Recalculation failed:", error);
+      toast.error("Recalculation failed");
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [clearCache, loadDashboardData]);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && !loading && !isRefreshing) {
-        if (!isCacheValid(CACHE_KEYS.DASHBOARD_STATS)) {
-          loadDashboardData(true);
-        }
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [loading, isRefreshing]);
+  const isDashboardCacheValid = () => isCacheValid(CACHE_KEYS.DASHBOARD_STATS);
 
   return {
     stats,
@@ -146,6 +141,7 @@ export const useDashboardData = () => {
     isRefreshing,
     loadDashboardData,
     recalculateStats,
-    isCacheValid: () => isCacheValid(CACHE_KEYS.DASHBOARD_STATS),
+    isDashboardCacheValid,
   };
 };
+                                              

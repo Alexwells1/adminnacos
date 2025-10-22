@@ -7,16 +7,23 @@ const CACHE_KEYS = {
   LAST_UPDATED: "super_admin_last_updated",
 };
 
-const CACHE_EXPIRY = 5 * 60 * 1000;
+const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
 export const useDashboardCache = () => {
   const isCacheValid = useCallback((cacheKey: string): boolean => {
-    const cached = localStorage.getItem(cacheKey);
-    if (!cached) return false;
-
     try {
+      const cached = localStorage.getItem(cacheKey);
+      if (!cached) return false;
+
       const { timestamp } = JSON.parse(cached);
-      return Date.now() - timestamp < CACHE_EXPIRY;
+      const isValid = Date.now() - timestamp < CACHE_EXPIRY;
+
+      if (!isValid) {
+        // Auto-clean expired cache
+        localStorage.removeItem(cacheKey);
+      }
+
+      return isValid;
     } catch {
       return false;
     }
@@ -29,6 +36,7 @@ export const useDashboardCache = () => {
 
       const { data, timestamp } = JSON.parse(cached);
 
+      // Check expiry and clean if expired
       if (Date.now() - timestamp > CACHE_EXPIRY) {
         localStorage.removeItem(cacheKey);
         return null;
