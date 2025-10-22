@@ -40,7 +40,6 @@ export type {
 export const authService = {
   login: async (email: string, password: string): Promise<LoginResponse> => {
     const response = await axios.post<LoginResponse>("/auth/login", {
-      // 🔥 FIXED ENDPOINT
       email,
       password,
     });
@@ -48,14 +47,12 @@ export const authService = {
   },
 
   logout: async (): Promise<{ message: string }> => {
-    const response = await axios.post<{ message: string }>(
-      "/auth/logout" // 🔥 FIXED ENDPOINT
-    );
+    const response = await axios.post<{ message: string }>("/auth/logout");
     return response.data;
   },
 
   getProfile: async (): Promise<{ admin: Admin }> => {
-    const response = await axios.get<{ admin: Admin }>("/auth/profile"); // 🔥 FIXED ENDPOINT
+    const response = await axios.get<{ admin: Admin }>("/auth/profile");
     return response.data;
   },
 
@@ -64,7 +61,7 @@ export const authService = {
     email?: string;
   }): Promise<{ admin: Admin }> => {
     const response = await axios.put<{ admin: Admin }>(
-      "/auth/profile", // 🔥 FIXED ENDPOINT
+      "/auth/profile",
       updates
     );
     return response.data;
@@ -75,7 +72,7 @@ export const authService = {
     newPassword: string
   ): Promise<{ message: string }> => {
     const response = await axios.patch<{ message: string }>(
-      "/auth/profile/password", // 🔥 FIXED ENDPOINT
+      "/auth/profile/password",
       {
         currentPassword,
         newPassword,
