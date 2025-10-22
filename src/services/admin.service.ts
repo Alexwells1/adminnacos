@@ -81,6 +81,7 @@ export const authService = {
     return response.data;
   },
 };
+
 // Admin Management Service
 export const adminManagementService = {
   registerAdmin: async (
@@ -140,144 +141,36 @@ export const adminManagementService = {
 // Dashboard Service
 export const dashboardService = {
   getSuperAdminStats: async (): Promise<DashboardStats> => {
-    console.log("📡 [dashboardService] Fetching Super Admin Stats...");
-    try {
-      const response = await axios.get<DashboardStats>(
-        "/admin/stats/super-admin"
-      );
-      console.log(
-        "✅ [dashboardService] Super Admin Stats Response:",
-        response.data
-      );
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ [dashboardService] Failed to fetch Super Admin Stats");
-      if (error.response) {
-        console.error("📥 Response Error:", {
-          status: error.response.status,
-          data: error.response.data,
-        });
-      } else if (error.request) {
-        console.error("🚫 No response received from server:", error.request);
-      } else {
-        console.error("⚠️ Request setup error:", error.message);
-      }
-      throw error;
-    }
+    const response = await axios.get<DashboardStats>(
+      "/admin/stats/super-admin"
+    );
+    return response.data;
   },
 
   getCollegeAdminStats: async (): Promise<DashboardStats> => {
-    console.log("📡 [dashboardService] Fetching College Admin Stats...");
-    try {
-      const response = await axios.get<DashboardStats>(
-        "/admin/stats/college-admin"
-      );
-      console.log(
-        "✅ [dashboardService] College Admin Stats Response:",
-        response.data
-      );
-      return response.data;
-    } catch (error: any) {
-      console.error(
-        "❌ [dashboardService] Failed to fetch College Admin Stats"
-      );
-      if (error.response) {
-        console.error("📥 Response Error:", {
-          status: error.response.status,
-          data: error.response.data,
-        });
-      } else if (error.request) {
-        console.error("🚫 No response received from server:", error.request);
-      } else {
-        console.error("⚠️ Request setup error:", error.message);
-      }
-      throw error;
-    }
+    const response = await axios.get<DashboardStats>(
+      "/admin/stats/college-admin"
+    );
+    return response.data;
   },
 
   getDepartmentalAdminStats: async (): Promise<DashboardStats> => {
-    console.log("📡 [dashboardService] Fetching Departmental Admin Stats...");
-    try {
-      const response = await axios.get<DashboardStats>(
-        "/admin/stats/departmental-admin"
-      );
-      console.log(
-        "✅ [dashboardService] Departmental Admin Stats Response:",
-        response.data
-      );
-      return response.data;
-    } catch (error: any) {
-      console.error(
-        "❌ [dashboardService] Failed to fetch Departmental Admin Stats"
-      );
-      if (error.response) {
-        console.error("📥 Response Error:", {
-          status: error.response.status,
-          data: error.response.data,
-        });
-      } else if (error.request) {
-        console.error("🚫 No response received from server:", error.request);
-      } else {
-        console.error("⚠️ Request setup error:", error.message);
-      }
-      throw error;
-    }
+    const response = await axios.get<DashboardStats>(
+      "/admin/stats/departmental-admin"
+    );
+    return response.data;
   },
 
   getGeneralAdminStats: async (): Promise<DashboardStats> => {
-    console.log("📡 [dashboardService] Fetching General Admin Stats...");
-    try {
-      const response = await axios.get<DashboardStats>(
-        "/admin/stats/general-admin"
-      );
-      console.log(
-        "✅ [dashboardService] General Admin Stats Response:",
-        response.data
-      );
-      return response.data;
-    } catch (error: any) {
-      console.error(
-        "❌ [dashboardService] Failed to fetch General Admin Stats"
-      );
-      if (error.response) {
-        console.error("📥 Response Error:", {
-          status: error.response.status,
-          data: error.response.data,
-        });
-      } else if (error.request) {
-        console.error("🚫 No response received from server:", error.request);
-      } else {
-        console.error("⚠️ Request setup error:", error.message);
-      }
-      throw error;
-    }
+    const response = await axios.get<DashboardStats>(
+      "/admin/stats/general-admin"
+    );
+    return response.data;
   },
 
   getFinancialStats: async (): Promise<FinancialStats> => {
-    console.log("📡 [dashboardService] Fetching Financial Stats...");
-    try {
-      const response = await axios.get<FinancialStats>(
-        "/admin/financial/stats"
-      );
-      console.log(
-        "✅ [dashboardService] Financial Stats Response:",
-        response.data
-      );
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ [dashboardService] Failed to fetch Financial Stats");
-      if (error.response) {
-        console.error("📥 Response Error:", {
-          status: error.response.status,
-          data: error.response.data,
-        });
-      } else if (error.request) {
-        console.error("🚫 No response received from server:", error.request);
-      } else {
-        console.error("⚠️ Request setup error:", error.message);
-      }
-      throw error;
-    }
+    const response = await axios.get<FinancialStats>("/admin/financial/stats");
+    return response.data;
   },
 };
 
@@ -337,9 +230,7 @@ export const paymentService = {
   ): Promise<PaginatedResponse<Payment>> => {
     const response = await axios.get<PaginatedResponse<Payment>>(
       "/admin/payments",
-      {
-        params: filters,
-      }
+      { params: filters }
     );
     return response.data;
   },
@@ -349,9 +240,7 @@ export const paymentService = {
   ): Promise<{ results: Payment[]; count: number }> => {
     const response = await axios.get<{ results: Payment[]; count: number }>(
       "/admin/payments/search",
-      {
-        params: { q: query },
-      }
+      { params: { q: query } }
     );
     return response.data;
   },
@@ -380,9 +269,10 @@ export const paymentService = {
   deletePayment: async (
     id: string
   ): Promise<{ message: string; payment: Payment }> => {
-    const response = await axios.delete<{ message: string; payment: Payment }>(
-      `/admin/payments/${id}`
-    );
+    const response = await axios.delete<{
+      message: string;
+      payment: Payment;
+    }>(`/admin/payments/${id}`);
     return response.data;
   },
 
