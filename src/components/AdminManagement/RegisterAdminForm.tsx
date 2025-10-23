@@ -38,10 +38,10 @@ interface CreateAdminFormProps {
 
 // FIX: Use proper department enum values that match your types
 const DEPARTMENTS = [
-  { value: "COMSSA", label: "Computer Science (COMSSA)" },
-  { value: "SENIFSA", label: "Software Engineering (SENIFSA)" },
-  { value: "CYDASA", label: "Cyber Security (CYDASA)" },
-  { value: "ICITSA", label: "Information Technology (ICITSA)" },
+  { value: "Computer Science", label: "Computer Science (COMSSA)" },
+  { value: "Software Engineering", label: "Software Engineering (SENIFSA)" },
+  { value: "Cyber Security", label: "Cyber Security (CYDASA)" },
+  { value: "Information Technology", label: "Information Technology (ICITSA)" },
 ];
 
 const ROLES = [

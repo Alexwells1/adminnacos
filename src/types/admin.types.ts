@@ -23,7 +23,11 @@ export interface Admin extends BaseEntity {
     | "dept_admin" // Changed from "departmental_admin"
     | "director_finance"
     | "general_admin"; // Added missing role
-  department?: "COMSSA" | "ICITSA" | "CYDASA" | "SENIFSA";
+  department?:
+    | "Computer Science"
+    | "ICT & Information Technology"
+    | "Cybersecurity & Data Science"
+    | "Software Engr & Information Systems";
   permissions: AdminPermissions;
   isActive: boolean;
 }
