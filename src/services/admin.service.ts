@@ -1,14 +1,14 @@
+import type { Expense, CreateExpenseData } from "@/types/expense.types";
 import axios from "./axios";
 import type {
   // Core Types
   Admin,
   Payment,
-  Expense,
+
   Executive,
   FinancialStats,
   DashboardStats,
   PaymentTypeEnum,
-  ExpenseTypeEnum,
 
   // API Response Types
   LoginResponse,
@@ -18,7 +18,7 @@ import type {
   PaymentFilters,
   UpdateAdminData,
   CreatePaymentData,
-  CreateExpenseData,
+
   CreateExecutiveData,
   CreateAdminData,
 } from "@/types/admin.types";
@@ -27,13 +27,11 @@ import type {
 export type {
   Admin,
   Payment,
-  Expense,
   Executive,
   FinancialStats,
   DashboardStats,
   PaymentFilters,
   PaymentTypeEnum as PaymentType,
-  ExpenseTypeEnum as ExpenseType,
 };
 
 // Auth Service
