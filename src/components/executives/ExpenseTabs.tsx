@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -32,20 +32,22 @@ const getAvailableAccounts = (
   adminRole: string,
   adminDepartment?: string
 ): AccountKey[] => {
+  let accounts: AccountKey[] = [];
+
   if (adminRole === "college_admin") {
-    return ["college_general"];
+    accounts = ["college_general"];
   } else if (adminRole === "dept_admin" && adminDepartment) {
     const departmentMap = {
       "Computer Science": "dept_comssa",
-      "Software Engineering": "dept_senifsa",
+      "Software Engr & Information Systems": "dept_senifsa",
       "Cybersecurity & Data Science": "dept_cydasa",
       "ICT & Information Technology": "dept_icitsa",
     } as const;
     const account =
       departmentMap[adminDepartment as keyof typeof departmentMap];
-    return [account] as AccountKey[];
+    if (account) accounts = [account];
   } else if (adminRole === "super_admin" || adminRole === "director_finance") {
-    return [
+    accounts = [
       "college_general",
       "dept_comssa",
       "dept_icitsa",
@@ -54,7 +56,9 @@ const getAvailableAccounts = (
       "maintenance",
     ];
   }
-  return [];
+
+
+  return accounts;
 };
 
 const getVisibleTabs = (adminRole: string) => {
@@ -84,22 +88,28 @@ const getAccountBalances = (
   adminRole: string,
   adminDepartment?: string
 ): Record<AccountKey, number> => {
-  if (!financialStats) return {} as Record<AccountKey, number>;
+  if (!financialStats) {
+    return {} as Record<AccountKey, number>;
+  }
 
   const balances: Partial<Record<AccountKey, number>> = {};
   const availableAccounts = getAvailableAccounts(adminRole, adminDepartment);
 
   availableAccounts.forEach((account) => {
-    if (account === "maintenance") {
-      balances[account] = financialStats.availableMaintenance;
-    } else {
-      balances[account] =
-        financialStats.accounts[account]?.availableBalance || 0;
-    }
+    const balance =
+      account === "maintenance"
+        ? financialStats.availableMaintenance
+        : financialStats.accounts[account]?.availableBalance || 0;
+
+    balances[account] = balance;
+
   });
+
+
 
   return balances as Record<AccountKey, number>;
 };
+
 
 export const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
   adminRole = "",
@@ -107,6 +117,8 @@ export const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
   financialStats,
   loading,
 }) => {
+
+
   const visibleTabs = getVisibleTabs(adminRole);
   const accountBalances = getAccountBalances(
     financialStats,
@@ -114,7 +126,9 @@ export const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
     adminDepartment
   );
 
+
   if (visibleTabs.length <= 1) return null;
+
 
   return (
     <Tabs defaultValue="overview" className="space-y-4">

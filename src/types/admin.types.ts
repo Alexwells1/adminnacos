@@ -64,27 +64,7 @@ export interface Payment extends BaseEntity {
 export type PaymentType = "college" | "departmental";
 export type ExpenseType = "college" | "departmental";
 
-// Expense Types
-export type ExpensePaymentMethod = "maintenance_balance" | "available_balance";
-export type ExpenseTypeEnum = "college" | "departmental"; // Renamed to avoid conflict
-export type ExpenseAccount =
-  | "college_general"
-  | "dept_comssa"
-  | "dept_icitsa"
-  | "dept_cydasa"
-  | "dept_senifsa";
 
-export interface Expense extends BaseEntity {
-  title: string;
-  description: string;
-  amount: number;
-  paymentMethod: ExpensePaymentMethod;
-  type: ExpenseTypeEnum;
-  department?: PaymentDepartment;
-  account: ExpenseAccount;
-  date: string;
-  createdBy: Admin;
-}
 
 // Executive Types
 export interface Executive extends BaseEntity {
@@ -354,26 +334,9 @@ export interface ChangePasswordData {
   newPassword: string;
 }
 
-export interface CreateExpenseData {
-  title: string;
-  description: string;
-  amount: number;
-  paymentMethod: ExpensePaymentMethod;
-  type: ExpenseTypeEnum;
-  department?: PaymentDepartment;
-  account: ExpenseAccount;
-  date?: string;
-}
 
-export interface ExpensesResponse {
-  expenses: Expense[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+
+
 
 // Account types for the financial system
 export interface AccountBalance {
@@ -398,15 +361,6 @@ export interface PaginatedResponse<T> {
   };
 }
 
-export interface PaginatedExpenses {
-  expenses: Expense[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
 
 // Department mapping constants for frontend
 export const DEPARTMENT_MAPPING = {
@@ -434,7 +388,6 @@ export const ACCOUNT_MAPPING = {
 // Re-export types for backward compatibility with different names
 export type {
   Payment as PaymentInterface,
-  Expense as ExpenseInterface,
   Executive as ExecutiveInterface,
   FinancialStats as FinancialStatsInterface,
   DashboardStats as DashboardStatsInterface,

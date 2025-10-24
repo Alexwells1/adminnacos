@@ -76,7 +76,7 @@ const getAvailableAccounts = (adminRole: string, adminDepartment?: string) => {
   } else if (adminRole === "dept_admin" && adminDepartment) {
     const departmentMap = {
       "Computer Science": "dept_comssa",
-      "Software Engineering": "dept_senifsa",
+      "Software Engr & Information Systems": "dept_senifsa",
       "Cybersecurity & Data Science": "dept_cydasa",
       "ICT & Information Technology": "dept_icitsa",
     } as const;
@@ -119,58 +119,54 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const availableAccounts = getAvailableAccounts(adminRole, adminDepartment);
 
   // Set default values based on admin role and update balance
-  useEffect(() => {
-    if (adminRole === "dept_admin" && adminDepartment) {
-      const departmentMap = {
-        "Computer Science": "COMSSA",
-        "Software Engineering": "SENIFSA",
-        "Cybersecurity & Data Science": "CYDASA",
-        "ICT & Information Technology": "ICITSA",
-      } as const;
+useEffect(() => {
+  if (adminRole === "dept_admin" && adminDepartment) {
+    const departmentMap = {
+      "Computer Science": "COMSSA",
+      "Software Engr & Information Systems": "SENIFSA",
+      "Cybersecurity & Data Science": "CYDASA",
+      "ICT & Information Technology": "ICITSA",
+    } as const;
 
-      const dept = departmentMap[adminDepartment as keyof typeof departmentMap];
-      const account =
-        `dept_${dept.toLowerCase()}` as CreateExpenseData["account"];
+    const dept =
+      departmentMap[adminDepartment as keyof typeof departmentMap];
 
-      setFormData((prev) => ({
-        ...prev,
-        type: "departmental",
-        department: dept,
-        account,
-      }));
+    const account =
+      `dept_${dept.toLowerCase()}` as CreateExpenseData["account"];
 
-      // Set initial balance for department admin
-      if (financialStats) {
-        const balance = financialStats.accounts[account]?.availableBalance || 0;
-        setAccountBalance(balance);
-      }
-    } else if (adminRole === "college_admin") {
-      setFormData((prev) => ({
-        ...prev,
-        type: "college",
-        account: "college_general",
-      }));
+    setFormData((prev) => ({
+      ...prev,
+      type: "departmental",
+      department: dept,
+      account,
+    }));
 
-      // Set initial balance for college admin
-      if (financialStats) {
-        const balance =
-          financialStats.accounts.college_general.availableBalance;
-        setAccountBalance(balance);
-      }
-    } else if (
-      adminRole === "super_admin" ||
-      adminRole === "director_finance"
-    ) {
-      // Set initial balance for super admin
-      if (financialStats) {
-        const balance =
-          financialStats.accounts.college_general.availableBalance;
-        setAccountBalance(balance);
-      }
+    // Set initial balance
+    if (financialStats) {
+      const balance = financialStats.accounts[account]?.availableBalance || 0;
+      setAccountBalance(balance);
     }
-  }, [adminRole, adminDepartment, financialStats]);
+  } else if (adminRole === "college_admin") {
+    setFormData((prev) => ({
+      ...prev,
+      type: "college",
+      account: "college_general",
+    }));
 
-  // Update balance when account changes
+    if (financialStats) {
+      const balance = financialStats.accounts.college_general.availableBalance;
+      setAccountBalance(balance);
+    }
+  } else if (adminRole === "super_admin" || adminRole === "director_finance") {
+    if (financialStats) {
+      const balance = financialStats.accounts.college_general.availableBalance;
+      setAccountBalance(balance);
+    }
+  }
+}, [adminRole, adminDepartment, financialStats]);
+
+
+
   useEffect(() => {
     if (financialStats) {
       if (formData.paymentMethod === "maintenance_balance") {
@@ -213,6 +209,10 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     if (!validateForm()) return;
 
     try {
+      console.log("Admin Role:", adminRole);
+      console.log("Submitting Expense Data:", formData);
+      console.log("department:", formData.department);
+      console.log("account:", formData.account);
       await onSubmit(formData);
       setFormData({
         title: "",
@@ -291,11 +291,11 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     });
   };
 
-  const isCollegeAdmin = adminRole === "college_admin";
-  const isDeptAdmin = adminRole === "dept_admin";
   const canChooseAccount =
     adminRole === "super_admin" || adminRole === "director_finance";
   const canChoosePaymentMethod =
+    adminRole === "super_admin" || adminRole === "director_finance";
+    const canChooseType =
     adminRole === "super_admin" || adminRole === "director_finance";
 
   return (
@@ -396,67 +396,53 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="type">Type *</Label>
-              <Select
-                value={formData.type}
-                onValueChange={handleTypeChange}
-                disabled={isCollegeAdmin || isDeptAdmin}
-              >
-                <SelectTrigger className={errors.type ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="college">College</SelectItem>
-                  <SelectItem value="departmental">Departmental</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.type && (
-                <p className="text-sm text-red-500">{errors.type}</p>
-              )}
-            </div>
+            {canChooseType && (
+              <div className="space-y-2">
+                <Label htmlFor="type">Type *</Label>
+                <Select value={formData.type} onValueChange={handleTypeChange}>
+                  <SelectTrigger
+                    className={errors.type ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="college">College</SelectItem>
+                    <SelectItem value="departmental">Departmental</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.type && (
+                  <p className="text-sm text-red-500">{errors.type}</p>
+                )}
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="paymentMethod">Payment Method *</Label>
-              <Select
-                value={formData.paymentMethod}
-                onValueChange={handlePaymentMethodChange}
-                disabled={!canChoosePaymentMethod}
-              >
-                <SelectTrigger
-                  className={errors.paymentMethod ? "border-red-500" : ""}
-                >
-                  <SelectValue placeholder="Select method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="available_balance">
-                    Available Balance
-                  </SelectItem>
-                  {canChoosePaymentMethod && (
-                    <SelectItem value="maintenance_balance">
-                      Maintenance Balance
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-              {errors.paymentMethod && (
-                <p className="text-sm text-red-500">{errors.paymentMethod}</p>
-              )}
-              {!canChoosePaymentMethod && (
-                <p className="text-xs text-gray-500">
-                  Only available balance can be used for expenses
-                </p>
-              )}
-            </div>
-          </div>
+        {canChoosePaymentMethod && (
+  <div className="space-y-2">
+    <Label htmlFor="paymentMethod">Payment Method *</Label>
+    <Select
+      value={formData.paymentMethod}
+      onValueChange={handlePaymentMethodChange}
+    >
+      <SelectTrigger className={errors.paymentMethod ? "border-red-500" : ""}>
+        <SelectValue placeholder="Select method" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="available_balance">Available Balance</SelectItem>
+        <SelectItem value="maintenance_balance">Maintenance Balance</SelectItem>
+      </SelectContent>
+    </Select>
+    {errors.paymentMethod && (
+      <p className="text-sm text-red-500">{errors.paymentMethod}</p>
+    )}
+  </div>
+)}
 
-          {formData.type === "departmental" && (
+          {formData.type === "departmental" && canChooseType && (
             <div className="space-y-2">
               <Label htmlFor="department">Department *</Label>
               <Select
                 value={formData.department || ""}
                 onValueChange={handleDepartmentChange}
-                disabled={isDeptAdmin}
               >
                 <SelectTrigger
                   className={errors.department ? "border-red-500" : ""}
@@ -484,30 +470,34 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="account">Account *</Label>
-            <Select
-              value={formData.account}
-              onValueChange={handleAccountChange}
-              disabled={!canChooseAccount}
-            >
-              <SelectTrigger className={errors.account ? "border-red-500" : ""}>
-                <SelectValue placeholder="Select account" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableAccounts.map((account) => (
-                  <SelectItem key={account} value={account}>
-                    {
-                      ACCOUNT_CONFIG[account as keyof typeof ACCOUNT_CONFIG]
-                        ?.name
-                    }
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.account && (
-              <p className="text-sm text-red-500">{errors.account}</p>
-            )}
+          {canChooseAccount && (
+            <div className="space-y-2">
+              <Label htmlFor="account">Account *</Label>
+              <Select
+                value={formData.account}
+                onValueChange={handleAccountChange}
+              >
+                <SelectTrigger
+                  className={errors.account ? "border-red-500" : ""}
+                >
+                  <SelectValue placeholder="Select account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableAccounts.map((account) => (
+                    <SelectItem key={account} value={account}>
+                      {
+                        ACCOUNT_CONFIG[account as keyof typeof ACCOUNT_CONFIG]
+                          ?.name
+                      }
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.account && (
+                <p className="text-sm text-red-500">{errors.account}</p>
+              )}
+            </div>
+          )}
           </div>
 
           <div className="space-y-2">

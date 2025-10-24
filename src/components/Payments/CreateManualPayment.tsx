@@ -128,10 +128,10 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
         fullName: formData.fullName,
         matricNumber: formData.matricNumber,
         department: formData.department as
-          | "COMSSA"
-          | "ICITSA"
-          | "CYDASA"
-          | "SENIFSA", // Type assertion
+          | "Computer Science"
+          | "ICT & Information Technology"
+          | "Cybersecurity & Data Science"
+          | "Software Engr & Information Systems",
         level: formData.level,
         amount: parseFloat(formData.amount),
         type: formData.type as "college" | "departmental",

@@ -60,8 +60,13 @@ export const AccountBalanceCard: React.FC<AccountBalanceCardProps> = ({
   balance,
   stats,
 }) => {
-  const config = ACCOUNT_CONFIG[account];
-  const Icon = config.icon;
+ const config = ACCOUNT_CONFIG[account];
+ if (!config) {
+   console.error(`Invalid account type: ${account}`);
+   return null; // or render a fallback UI
+ }
+ const Icon = config.icon;
+
 
   const getAccountData = () => {
     if (account === "maintenance") {

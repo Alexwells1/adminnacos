@@ -56,6 +56,7 @@ export const useExpensesData = () => {
   const canViewAll = isRole(["super_admin", "director_finance"]);
 
   // Role-based expense filtering
+  // In your useExpensesData hook, update the getFilteredExpenses function:
   const getFilteredExpenses = useCallback(
     (expensesList: Expense[]) => {
       if (canViewAll) {
@@ -66,11 +67,12 @@ export const useExpensesData = () => {
             expense.type === "college" || expense.account === "college_general"
         );
       } else if (isRole("dept_admin") && admin?.department) {
+        // Map admin department to expense department code
         const departmentMap = {
           "Computer Science": "COMSSA",
-          "Software Engineering": "SENIFSA",
-          "Cybersecurity & Data Science": "CYDASA",
           "ICT & Information Technology": "ICITSA",
+          "Cybersecurity & Data Science": "CYDASA",
+          "Software Engr & Information Systems": "SENIFSA",
         } as const;
 
         const userDept =
