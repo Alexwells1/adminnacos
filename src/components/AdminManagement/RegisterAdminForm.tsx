@@ -39,9 +39,15 @@ interface CreateAdminFormProps {
 // FIX: Use proper department enum values that match your types
 const DEPARTMENTS = [
   { value: "Computer Science", label: "Computer Science (COMSSA)" },
-  { value: "Software Engineering", label: "Software Engineering (SENIFSA)" },
-  { value: "Cyber Security", label: "Cyber Security (CYDASA)" },
-  { value: "Information Technology", label: "Information Technology (ICITSA)" },
+  {
+    value: "Software Engr & Information Systems",
+    label: "Software Engineering (SENIFSA)",
+  },
+  { value: "Cybersecurity & Data Science", label: "Cyber Security (CYDASA)" },
+  {
+    value: "ICT & Information Technology",
+    label: "Information Technology (ICITSA)",
+  },
 ];
 
 const ROLES = [
@@ -112,17 +118,16 @@ export const CreateAdminForm: React.FC<CreateAdminFormProps> = ({
     setLoading(true);
 
     try {
-      // FIX: Prepare data with proper department type
       const createData = {
         name: formData.name,
         email: formData.email,
         password: formData.password,
         role: formData.role as any,
         department: formData.department as
-          | "COMSSA"
-          | "ICITSA"
-          | "CYDASA"
-          | "SENIFSA"
+          | "Computer Science"
+          | "ICT & Information Technology"
+          | "Cybersecurity & Data Science"
+          | "Software Engr & Information Systems"
           | undefined,
       };
 
@@ -150,14 +155,6 @@ export const CreateAdminForm: React.FC<CreateAdminFormProps> = ({
       ...(field === "role" && value !== "dept_admin" && { department: "" }),
     }));
   };
-
-  // FIX: Remove unused getRoleIcon function since it's not used
-  /*
-  const getRoleIcon = (roleValue: string) => {
-    const role = ROLES.find(r => r.value === roleValue);
-    return role ? React.createElement(role.icon, { className: "h-4 w-4" }) : null;
-  };
-  */
 
   return (
     <Dialog open onOpenChange={onCancel}>

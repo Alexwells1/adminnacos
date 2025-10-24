@@ -56,11 +56,11 @@ export const ExecutivesPage: React.FC = () => {
         <CardHeader className="pb-4">
           <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-              Executive List ({executives.length})
+              Stakeholders List ({executives.length})
               <p className="text-sm font-normal text-muted-foreground mt-1">
                 {canManageExecutives
-                  ? "Manage executive students and their privileges"
-                  : "View executive students with special payment privileges"}
+                  ? "Manage stakeholder students and their privileges"
+                  : "View stakeholder students with special payment privileges"}
               </p>
             </div>
           </CardTitle>
@@ -69,7 +69,7 @@ export const ExecutivesPage: React.FC = () => {
           <ExecutiveTable
             executives={executives}
             loading={loading}
-            onExecutiveUpdate={handleManualRefresh}
+            onExecutiveUpdate={handleManualRefresh} 
             canManage={canManageExecutives}
           />
         </CardContent>

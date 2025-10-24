@@ -41,7 +41,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       permission: "canViewPayments",
     },
     {
-      name: "Executives",
+      name: "Stakeholders",
       href: "/admin/executives",
       icon: Users,
       permission: "canManageAdmins",

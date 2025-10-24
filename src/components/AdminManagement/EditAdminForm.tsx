@@ -42,10 +42,16 @@ interface EditAdminFormProps {
 
 // FIX: Use proper department values that match your types
 const DEPARTMENTS = [
-  { value: "COMSSA", label: "Computer Science (COMSSA)" },
-  { value: "SENIFSA", label: "Software Engineering (SENIFSA)" },
-  { value: "CYDASA", label: "Cyber Security (CYDASA)" },
-  { value: "ICITSA", label: "Information Technology (ICITSA)" },
+  { value: "Computer Science", label: "Computer Science (COMSSA)" },
+  {
+    value: "Software Engr & Information Systems",
+    label: "Software Engineering (SENIFSA)",
+  },
+  { value: "Cybersecurity & Data Science", label: "Cyber Security (CYDASA)" },
+  {
+    value: "ICT & Information Technology",
+    label: "Information Technology (ICITSA)",
+  },
 ];
 
 const ROLES = [
@@ -87,16 +93,15 @@ export const EditAdminForm: React.FC<EditAdminFormProps> = ({
     setLoading(true);
 
     try {
-      // FIX: Prepare data that matches UpdateAdminData type
       const updateData = {
         name: formData.name,
         email: formData.email,
         role: formData.role,
         department: formData.department as
-          | "COMSSA"
-          | "ICITSA"
-          | "CYDASA"
-          | "SENIFSA"
+          | "Computer Science"
+          | "ICT & Information Technology"
+          | "Cybersecurity & Data Science"
+          | "Software Engr & Information Systems"
           | undefined,
         isActive: formData.isActive,
       };
@@ -125,15 +130,6 @@ export const EditAdminForm: React.FC<EditAdminFormProps> = ({
     }));
   };
 
-  // FIX: Remove unused getRoleIcon function since it's not used in the component
-  /*
-  const getRoleIcon = (roleValue: string) => {
-    const role = ROLES.find((r) => r.value === roleValue);
-    return role
-      ? React.createElement(role.icon, { className: "h-4 w-4" })
-      : null;
-  };
-  */
 
   return (
     <Dialog open onOpenChange={onCancel}>

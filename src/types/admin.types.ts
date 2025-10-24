@@ -33,7 +33,11 @@ export interface Admin extends BaseEntity {
 }
 
 // Payment Types
-export type PaymentDepartment = "COMSSA" | "ICITSA" | "CYDASA" | "SENIFSA";
+export type PaymentDepartment =
+  | "Computer Science"
+  | "ICT & Information Technology"
+  | "Cybersecurity & Data Science"
+  | "Software Engr & Information Systems";
 export type PaymentTypeEnum = "college" | "departmental"; // Renamed to avoid conflict
 export type PaymentStatus = "pending" | "completed" | "failed" | "refunded";
 

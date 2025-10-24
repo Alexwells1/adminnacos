@@ -118,14 +118,14 @@ export const AddExecutiveForm: React.FC<AddExecutiveFormProps> = ({
       <DialogTrigger asChild>
         <Button className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
-          Add Executive
+          Add Stakeholder
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
-            Add New Executive
+            Add New Stakeholde
           </DialogTitle>
         </DialogHeader>
 
@@ -164,7 +164,7 @@ export const AddExecutiveForm: React.FC<AddExecutiveFormProps> = ({
           {/* Scope */}
           <div className="space-y-2">
             <Label htmlFor="scope">
-              Executive Scope <span className="text-red-500">*</span>
+              Stakeholder Scope <span className="text-red-500">*</span>
             </Label>
             <Select
               value={formData.scope}

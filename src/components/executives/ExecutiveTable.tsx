@@ -43,13 +43,13 @@ export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
     setActionLoading(executive._id);
     try {
       await executiveService.removeExecutive(executive.matricNumber);
-      toast.success("Executive removed successfully");
+      toast.success("Stakeholder removed successfully");
       setDeleteDialogOpen(false);
       onExecutiveUpdate();
     } catch (error: any) {
-      console.error("Failed to remove executive:", error);
+      console.error("Failed to remove stakeholder:", error);
       const errorMessage =
-        error.response?.data?.message || "Failed to remove executive";
+        error.response?.data?.message || "Failed to remove stakeholder";
       toast.error(errorMessage);
     } finally {
       setActionLoading(null);
@@ -112,10 +112,10 @@ export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
       <div className="text-center py-12">
         <Shield className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-4 text-lg font-medium text-gray-900">
-          No executives found
+          No stakeholders found
         </h3>
         <p className="mt-2 text-sm text-gray-500">
-          No executive students have been added yet.
+          No stakeholders have been added yet.
         </p>
       </div>
     );
@@ -128,7 +128,7 @@ export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
           <thead>
             <tr className="border-b border-gray-200">
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
-                Executive
+                Stakeholder
               </th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
                 Matric Number
@@ -195,7 +195,7 @@ export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
                           className="text-red-600"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Remove Executive
+                          Remove Stakeholder
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -211,11 +211,11 @@ export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Remove Executive</DialogTitle>
+            <DialogTitle>Remove Stakeholder</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-gray-600">
-              Are you sure you want to remove this executive? This action cannot
+              Are you sure you want to remove this stakeholder? This action cannot
               be undone.
             </p>
             {selectedExecutive && (
@@ -247,7 +247,7 @@ export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
             >
               {actionLoading === selectedExecutive?._id
                 ? "Removing..."
-                : "Remove Executive"}
+                : "Remove Stakeholder"}
             </Button>
           </DialogFooter>
         </DialogContent>

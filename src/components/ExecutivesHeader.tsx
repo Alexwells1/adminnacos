@@ -22,7 +22,7 @@ export const ExecutivesHeader: React.FC<ExecutivesHeaderProps> = ({
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div className="flex-1">
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground leading-tight">
-          Executive Management
+          Stakeholders Management
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">
           Manage students with special payment privileges • {adminRole}
