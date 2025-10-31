@@ -126,7 +126,7 @@ function App() {
               />
 
               <Route
-              path="census-stats"
+              path="/admin/census-stats"
               element={
                 <PublicStatistics/>
               }/>
