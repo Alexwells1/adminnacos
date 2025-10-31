@@ -7,8 +7,6 @@
   "scope": "/admin/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#1f2937",
-  "theme_color": "#1f2937",
   "categories": ["productivity", "education", "management"],
   "icons": [
     {
