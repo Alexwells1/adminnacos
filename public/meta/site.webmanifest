@@ -1,7 +1,7 @@
 {
-  "name": "NACOS FUNAAB - National Association of Computing Students",
-  "short_name": "NACOS FUNAAB",
-  "description": "Welcome to NACOS FUNAAB - the Association of Computing Students at FUNAAB. Stay updated with latest news, events, executives, resources, and easily pay your dues online.",
+  "name": "NACOS - ADMIN",
+  "short_name": "NACOS - ADMIN",
+  "description": "Welcome to NACOS FUNAAB",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
