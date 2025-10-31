@@ -38,13 +38,13 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center p-4 border-b">
+          <div className="flex items-center p-4 border-b border-border">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8  rounded-lg flex items-center justify-center">
-                <img src="/logo.png" alt="logo" />
+              <div className="w-8 h-8 rounded-md flex items-center justify-center bg-muted">
+                <img src="/logo.png" alt="logo" className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold">NACOS</h1>
+                <h1 className="text-lg font-semibold text-foreground">NACOS</h1>
                 <p className="text-xs text-muted-foreground">Admin Portal</p>
               </div>
             </div>
@@ -60,13 +60,13 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                 <Link
                   key={item.name}
                   to={item.href}
+                  onClick={() => onOpenChange(false)}
                   className={cn(
                     "flex items-center px-3 py-3 text-base font-medium rounded-lg transition-all duration-200 w-full",
                     isActive
-                      ? "bg-blue-50 text-blue-700 border border-blue-200"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-muted text-foreground border border-border"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   )}
-                  onClick={() => onOpenChange(false)}
                 >
                   <Icon className="h-5 w-5 mr-3" />
                   {item.name}
@@ -76,26 +76,28 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
           </nav>
 
           {/* Footer */}
-          <div className="border-t p-4">
+          <div className="border-t border-border p-4">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{admin?.name}</p>
+                <p className="text-sm font-medium truncate text-foreground">
+                  {admin?.name}
+                </p>
                 <div className="flex items-center space-x-1 mt-1">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground capitalize">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-foreground capitalize">
                     {admin?.role?.replace("_", " ")}
                   </span>
                   {admin?.department && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs  bg-green-100 text-green-800 truncate font-medium">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted/70 text-foreground truncate">
                       {admin.department}
                     </span>
                   )}
                 </div>
               </div>
               <Button
-                variant="destructive"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={onLogout}
-                className="ml-2"
+                className="ml-2 hover:bg-destructive hover:text-destructive-foreground"
               >
                 <LogOut className="h-4 w-4" />
               </Button>

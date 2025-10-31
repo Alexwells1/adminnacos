@@ -1,4 +1,3 @@
-// src/components/Layout/Header.tsx
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { LogOut, Menu } from "lucide-react";
@@ -18,33 +17,38 @@ export const Header: React.FC<HeaderProps> = ({
   const { admin } = useAuth();
 
   return (
-    <header className="bg-background border-b sticky top-0 z-30">
-      <div className="flex items-center justify-between p-3">
-        {/* Left side - Mobile: Only hamburger and page title */}
+    <header className="sticky top-0 z-30 bg-card border-b border-border text-foreground">
+      <div className="flex items-center justify-between px-4 py-3">
+        {/* Left side */}
         <div className="flex items-center space-x-2 flex-1 lg:flex-none">
+          {/* Mobile Menu Button */}
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="lg:hidden hover:bg-accent hover:text-accent-foreground"
             onClick={onMenuClick}
           >
             <Menu className="h-5 w-5" />
           </Button>
 
-          {/* Show only page title on mobile */}
+          {/* Mobile Page Title */}
           <div className="lg:hidden">
             <h1 className="text-base font-semibold truncate">{currentPage}</h1>
           </div>
 
-          {/* Desktop header content */}
+          {/* Desktop Page Title + Role/Dept */}
           <div className="hidden lg:flex lg:items-center lg:space-x-4">
-            <h1 className="text-lg font-semibold">{currentPage}</h1>
+            <h1 className="text-lg font-semibold text-foreground">
+              {currentPage}
+            </h1>
             <div className="flex items-center space-x-2">
-              <span className="px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded-full capitalize font-medium">
-                {admin?.role?.replace("_", " ")}
-              </span>
+              {admin?.role && (
+                <span className="px-2 py-0.5 text-xs rounded-full bg-accent text-accent-foreground capitalize font-medium">
+                  {admin.role.replace("_", " ")}
+                </span>
+              )}
               {admin?.department && (
-                <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full truncate font-medium">
+                <span className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground truncate font-medium">
                   {admin.department}
                 </span>
               )}
@@ -54,25 +58,25 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right side */}
         <div className="flex items-center space-x-2">
-          {/* Mobile: Only user initial and logout button */}
+          {/* Mobile User Avatar + Logout */}
           <div className="lg:hidden flex items-center space-x-2">
-            <div className="flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded-full text-sm font-medium">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-medium">
               {admin?.name?.charAt(0) || "A"}
             </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={onLogout}
-              className="h-9 w-9"
+              className="hover:bg-destructive hover:text-destructive-foreground"
             >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Desktop: Full user info */}
+          {/* Desktop: Welcome message + Logout */}
           <div className="hidden lg:flex lg:items-center lg:space-x-4">
             <div className="text-sm text-muted-foreground">
-              Welcome,{" "}
+              Welcome,&nbsp;
               <span className="font-semibold text-foreground">
                 {admin?.name}
               </span>
@@ -81,7 +85,7 @@ export const Header: React.FC<HeaderProps> = ({
               variant="ghost"
               size="icon"
               onClick={onLogout}
-              className="hover:bg-destructive hover:text-destructive-foreground"
+              className="hover:bg-destructive hover:text-destructive-foreground transition-all"
             >
               <LogOut className="h-4 w-4" />
             </Button>
