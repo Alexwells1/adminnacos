@@ -93,7 +93,7 @@ export const useDashboardData = () => {
         saveToCache(CACHE_KEYS.LAST_UPDATED, now);
 
         if (forceRefresh) toast.success("Dashboard updated successfully");
-      } catch (err) {
+      } catch {
         toast.error("Failed to load dashboard data.");
       } finally {
         setLoading(false);
@@ -118,7 +118,7 @@ export const useDashboardData = () => {
       clearCache();
       await loadDashboardData(true);
       toast.success("Financial stats recalculated successfully");
-    } catch (error) {
+    } catch {
       toast.error("Failed to recalculate financial stats");
     } finally {
       setIsRefreshing(false);

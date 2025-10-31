@@ -13,6 +13,7 @@ export const DepartmentalTab: React.FC<DepartmentalTabProps> = ({
   stats,
   financialStats,
 }) => {
+
   const getDepartmentalBreakdown = () => {
     if (!stats?.detailedDepartmentBreakdown) return [];
 

@@ -79,7 +79,6 @@ export const BreakdownTable: React.FC<BreakdownTableProps> = ({
               <TableRow>
                 <TableHead className="text-xs">{getHeaderName()}</TableHead>
                 <TableHead className="text-xs text-right">Payments</TableHead>
-                <TableHead className="text-xs text-right">Revenue</TableHead>
                 <TableHead className="text-xs text-right">%</TableHead>
               </TableRow>
             </TableHeader>
@@ -91,9 +90,6 @@ export const BreakdownTable: React.FC<BreakdownTableProps> = ({
                   </TableCell>
                   <TableCell className="text-xs text-right py-2">
                     {item.count.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-xs text-right py-2">
-                    ₦{item.revenue.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-xs text-right py-2">
                     {totalRevenue > 0

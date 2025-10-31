@@ -43,6 +43,15 @@ export const AdminLogin: React.FC = () => {
 
     setLoading(true);
 
+    interface AxiosErrorLike {
+      response?: {
+        data?: {
+          message?: string;
+        };
+      };
+      message?: string;
+    }
+
     try {
       // Use the auth service to login
       const result = await authService.login(email, password);
@@ -58,10 +67,16 @@ export const AdminLogin: React.FC = () => {
 
       // Navigate to intended destination
       navigate(from, { replace: true });
-    } catch (err: any) {
-      if (err.response?.data?.message) {
-        toast.error(err.response.data.message);
-      } else if (err.message) {
+    } catch (err: unknown) {
+      const axiosMessage =
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        (err as AxiosErrorLike).response?.data?.message;
+
+      if (axiosMessage) {
+        toast.error(String(axiosMessage));
+      } else if (err instanceof Error && err.message) {
         toast.error(err.message);
       } else {
         toast.error("Login failed. Please try again.");

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BreakdownTable } from "@/components/Dashboard/BreakdownTable";
 import type { DashboardStats } from "@/types/admin.types";
 
@@ -7,6 +7,10 @@ interface LevelsTabProps {
 }
 
 export const LevelsTab: React.FC<LevelsTabProps> = ({ stats }) => {
+
+  useEffect(() => {
+    console.log("LevelsTab stats:", stats.levelBreakdown);
+  })
   return (
     <>
       <h2 className="text-lg font-semibold">Level Analysis</h2>

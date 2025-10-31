@@ -171,13 +171,28 @@ export const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-green-600">
-                      ₦{financialStats.netBalance.toLocaleString()}
+                      ₦
+                      {[
+                        accountBalances.college_general,
+                        accountBalances.dept_comssa,
+                        accountBalances.dept_cydasa,
+                        accountBalances.dept_icitsa,
+                        accountBalances.dept_senifsa,
+                      ]
+                        .map((b) => b || 0)
+                        .reduce((sum, b) => sum + b, 0)
+                        .toLocaleString()}
                     </div>
                     <div className="text-sm text-muted-foreground mt-2">
                       College: ₦
-                      {financialStats.totalCollegeRevenue.toLocaleString()} |
+                      {accountBalances.college_general.toLocaleString()} |
                       Departments: ₦
-                      {financialStats.totalDepartmentalRevenue.toLocaleString()}
+                      {(
+                        (accountBalances.dept_comssa || 0) +
+                        (accountBalances.dept_cydasa || 0) +
+                        (accountBalances.dept_icitsa || 0) +
+                        (accountBalances.dept_senifsa || 0)
+                      ).toLocaleString()}
                     </div>
                   </CardContent>
                 </Card>
