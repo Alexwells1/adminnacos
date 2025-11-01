@@ -57,15 +57,10 @@ export const LevelsTab: React.FC<LevelsTabProps> = ({ stats }) => {
                         <td className="p-4 font-medium">{item._id}</td>
                         <td className="p-4 text-right">{item.count}</td>
                         <td className="p-4 text-right">
-                          ₦{item.revenue.toLocaleString()}
+                         
                         </td>
                         <td className="p-4 text-right">
-                          ₦
-                          {item.count > 0
-                            ? Math.round(
-                                item.revenue / item.count
-                              ).toLocaleString()
-                            : 0}
+                         
                         </td>
                         <td className="p-4 text-right">
                           {stats.totalDeptRevenue !== undefined
