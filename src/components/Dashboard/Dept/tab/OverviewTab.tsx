@@ -1,7 +1,6 @@
 import React from "react";
 import { StatsCard } from "@/components/Dashboard/StatsCards";
 import { AccountBalanceCard } from "@/components/Dashboard/AccountBalanceCard";
-import { BreakdownTable } from "@/components/Dashboard/BreakdownTable";
 import type { DashboardStats, FinancialStats } from "@/types/admin.types";
 
 interface OverviewTabProps {
@@ -18,16 +17,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   const accountKey = getDepartmentAccountKey();
   const departmentAccount = stats.financialStats?.accounts[accountKey];
 
-  const getDepartmentLevelBreakdown = () => {
-    if (!stats?.levelWiseDept) return [];
-    return stats.levelWiseDept.map((item) => ({
-      _id: String(item._id),
-      revenue: item.revenue,
-      count: item.count,
-    }));
-  };
 
-  const departmentLevelBreakdown = getDepartmentLevelBreakdown();
+
+
 
   return (
     <>
@@ -74,23 +66,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         </div>
       )}
 
-      {/* Quick Breakdowns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {departmentLevelBreakdown.length > 0 ? (
-          <BreakdownTable
-            title="Department Payments by Level"
-            data={departmentLevelBreakdown}
-            type="level"
-          />
-        ) : (
-          <div className="bg-white rounded-lg border p-6">
-            <h3 className="font-semibold mb-4">Department Payments by Level</h3>
-            <div className="text-center py-8 text-muted-foreground">
-              No level breakdown data available
-            </div>
-          </div>
-        )}
-      </div>
+
+     
     </>
   );
 };
