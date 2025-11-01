@@ -1,5 +1,4 @@
 import React from "react";
-import { BreakdownTable } from "@/components/Dashboard/BreakdownTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardStats } from "@/types/admin.types";
 
@@ -25,11 +24,7 @@ export const LevelsTab: React.FC<LevelsTabProps> = ({ stats }) => {
 
       {departmentLevelBreakdown.length > 0 ? (
         <>
-          <BreakdownTable
-            title="Department Payments by Level"
-            data={departmentLevelBreakdown}
-            type="level"
-          />
+          
 
           {/* Level Details */}
           <Card>
@@ -57,10 +52,15 @@ export const LevelsTab: React.FC<LevelsTabProps> = ({ stats }) => {
                         <td className="p-4 font-medium">{item._id}</td>
                         <td className="p-4 text-right">{item.count}</td>
                         <td className="p-4 text-right">
-                         
+                          ₦{item.revenue.toLocaleString()}
                         </td>
                         <td className="p-4 text-right">
-                         
+                          ₦
+                          {item.count > 0
+                            ? Math.round(
+                                item.revenue / item.count
+                              ).toLocaleString()
+                            : 0}
                         </td>
                         <td className="p-4 text-right">
                           {stats.totalDeptRevenue !== undefined
