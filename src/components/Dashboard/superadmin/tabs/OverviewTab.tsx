@@ -30,13 +30,17 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         />
         <StatsCard
           title="College Revenue"
-          value={`₦${financialStats.totalCollegeRevenue.toLocaleString()}`}
+          value={`₦${(
+            financialStats?.totalCollegeRevenue ?? 0
+          ).toLocaleString()}`}
           subtitle="College general fund"
           color="purple"
         />
         <StatsCard
           title="Department Revenue"
-          value={`₦${financialStats.totalDepartmentalRevenue.toLocaleString()}`}
+          value={`₦${(
+            financialStats?.totalDepartmentalRevenue ?? 0
+          ).toLocaleString()}`}
           subtitle="All departments"
           color="orange"
         />
@@ -46,19 +50,23 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <StatsCard
           title="Total Maintenance"
-          value={`₦${financialStats.totalMaintenance.toLocaleString()}`}
+          value={`₦${(financialStats?.totalMaintenance ?? 0).toLocaleString()}`}
           subtitle="From all payments"
           color="blue"
         />
         <StatsCard
           title="Maintenance Used"
-          value={`₦${financialStats.maintenanceExpenses.toLocaleString()}`}
+          value={`₦${(
+            financialStats?.maintenanceExpenses ?? 0
+          ).toLocaleString()}`}
           subtitle="Total spent"
           color="orange"
         />
         <StatsCard
           title="Available Maintenance"
-          value={`₦${financialStats.availableMaintenance.toLocaleString()}`}
+          value={`₦${(
+            financialStats?.availableMaintenance ?? 0
+          ).toLocaleString()}`}
           subtitle="Remaining balance"
           color="green"
         />

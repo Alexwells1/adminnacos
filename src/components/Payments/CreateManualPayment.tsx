@@ -1,5 +1,5 @@
 // src/components/Payments/CreateManualPayment.tsx
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,19 +27,19 @@ interface CreateManualPaymentProps {
   onPaymentCreated: () => void;
 }
 
-// FIX: Use proper department enum values that match your types
-  const DEPARTMENTS = [
-    { value: "Computer Science", label: "Computer Science (COMSSA)" },
-    {
-      value: "Software Engr & Information Systems",
-      label: "Software Engineering (SENIFSA)",
-    },
-    { value: "Cybersecurity & Data Science", label: "Cyber Security (CYDASA)" },
-    {
-      value: "ICT & Information Technology",
-      label: "Information Technology (ICITSA)",
-    },
-  ];
+// Constants
+const DEPARTMENTS = [
+  { value: "Computer Science", label: "Computer Science (COMSSA)" },
+  {
+    value: "Software Engr & Information Systems",
+    label: "Software Engineering (SENIFSA)",
+  },
+  { value: "Cybersecurity & Data Science", label: "Cyber Security (CYDASA)" },
+  {
+    value: "ICT & Information Technology",
+    label: "Information Technology (ICITSA)",
+  },
+];
 
 const LEVELS = [
   { value: "100", label: "Level 100" },
@@ -77,8 +77,38 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
     scope: "",
   });
 
-  // Determine allowed payment types and departments based on role
-  const getAllowedPaymentTypes = () => {
+  // Calculate amount based on type, level, and executive status
+  const calculateAmount = () => {
+    const { type, level, isExecutive } = formData;
+    if (!type || !level) return "";
+
+    let baseAmount = 0;
+
+    if (type === "college") {
+      baseAmount = level === "100" || level === "200 D.E" ? 5000 : 4000;
+    } else {
+      baseAmount = level === "100" || level === "200 D.E" ? 4500 : 3500;
+    }
+
+    if (isExecutive) {
+      // Halve the amount for executives
+      baseAmount = baseAmount / 2;
+    }
+
+    return baseAmount.toString();
+  };
+
+  // Update amount whenever relevant fields change
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      amount: calculateAmount(),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.type, formData.level, formData.isExecutive, formData.scope]);
+
+  // Allowed payment types based on admin role
+  const allowedPaymentTypes = useMemo(() => {
     if (admin?.role === "super_admin" || admin?.role === "director_finance") {
       return PAYMENT_TYPES;
     }
@@ -89,24 +119,63 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
       return PAYMENT_TYPES.filter((type) => type.value === "departmental");
     }
     return [];
-  };
+  }, [admin?.role]);
 
-  // FIX: Remove unused allowedDepartments variable
-  const allowedPaymentTypes = getAllowedPaymentTypes();
+  // Auto-select payment type if only one allowed
+  useEffect(() => {
+    if (
+      allowedPaymentTypes.length === 1 &&
+      formData.type !== allowedPaymentTypes[0].value
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        type: allowedPaymentTypes[0].value,
+      }));
+    }
+  }, [allowedPaymentTypes, formData.type]);
+
+  // Auto-fill & lock department for dept_admin
+  useEffect(() => {
+    if (admin?.role === "dept_admin") {
+      setFormData((prev) => ({
+        ...prev,
+        department: admin.department ?? "",
+      }));
+    }
+  }, [admin]);
+
+  // Auto-select executive scope for dept_admin / college_admin
+  useEffect(() => {
+    if (formData.isExecutive) {
+      if (admin?.role === "dept_admin") {
+        setFormData((prev) => ({ ...prev, scope: "department" }));
+      } else if (admin?.role === "college_admin") {
+        setFormData((prev) => ({ ...prev, scope: "college" }));
+      }
+    } else if (!formData.isExecutive && formData.scope) {
+      setFormData((prev) => ({ ...prev, scope: "" }));
+    }
+  }, [formData.isExecutive, admin, formData.scope]);
+
+  // Restrict access for unauthorized roles
+  const hasAccess = admin && !["viewer", "student_admin"].includes(admin.role);
+  if (!hasAccess) {
+    return null;
+  }
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (!admin) {
+      toast.error("Admin not found");
+      return;
+    }
 
+    setLoading(true);
     try {
-      // Validate required fields
       if (
         !formData.fullName ||
         !formData.matricNumber ||
@@ -117,19 +186,16 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
         return;
       }
 
-      // Validate department for departmental payments
       if (formData.type === "departmental" && !formData.department) {
         toast.error("Department is required for departmental payments");
         return;
       }
 
-      // Validate scope for executive payments
       if (formData.isExecutive && !formData.scope) {
         toast.error("Executive scope is required for executive payments");
         return;
       }
 
-      // FIX: Prepare payment data with proper department type
       const paymentData = {
         fullName: formData.fullName,
         matricNumber: formData.matricNumber,
@@ -145,25 +211,28 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
         phoneNumber: formData.phoneNumber || undefined,
         isExecutive: formData.isExecutive,
         scope: formData.isExecutive ? formData.scope : undefined,
+        createdBy: admin._id,
+        createdByRole: admin.role,
       };
 
       await paymentService.createManualPayment(paymentData);
-
       toast.success("Manual payment created successfully");
 
-      // Reset form and close dialog
+      // Reset form
       setFormData({
         fullName: "",
         matricNumber: "",
-        department: "",
+        department: admin.role === "dept_admin" ? admin.department || "" : "",
         level: "",
         amount: "",
-        type: "",
+        type:
+          allowedPaymentTypes.length === 1 ? allowedPaymentTypes[0].value : "",
         email: "",
         phoneNumber: "",
         isExecutive: false,
         scope: "",
       });
+
       setOpen(false);
       onPaymentCreated();
     } catch (error: any) {
@@ -181,10 +250,11 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
     setFormData({
       fullName: "",
       matricNumber: "",
-      department: "",
+      department: admin.role === "dept_admin" ? admin.department || "" : "",
       level: "",
       amount: "",
-      type: "",
+      type:
+        allowedPaymentTypes.length === 1 ? allowedPaymentTypes[0].value : "",
       email: "",
       phoneNumber: "",
       isExecutive: false,
@@ -200,6 +270,7 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
           Create Manual Payment
         </Button>
       </DialogTrigger>
+
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -212,17 +283,14 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
           {/* Student Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Student Information
+              <User className="h-5 w-5" /> Student Information
             </h3>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">
+              <div>
+                <Label>
                   Full Name <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="fullName"
                   value={formData.fullName}
                   onChange={(e) =>
                     handleInputChange("fullName", e.target.value)
@@ -231,13 +299,11 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                   required
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="matricNumber">
+              <div>
+                <Label>
                   Matric Number <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="matricNumber"
                   value={formData.matricNumber}
                   onChange={(e) =>
                     handleInputChange("matricNumber", e.target.value)
@@ -249,8 +315,8 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="level">
+              <div>
+                <Label>
                   Level <span className="text-red-500">*</span>
                 </Label>
                 <Select
@@ -261,17 +327,16 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {LEVELS.map((level) => (
-                      <SelectItem key={level.value} value={level.value}>
-                        {level.label}
+                    {LEVELS.map((lvl) => (
+                      <SelectItem key={lvl.value} value={lvl.value}>
+                        {lvl.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="department">
+              <div>
+                <Label>
                   Department{" "}
                   {formData.type === "departmental" && (
                     <span className="text-red-500">*</span>
@@ -282,14 +347,15 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
                   onValueChange={(value) =>
                     handleInputChange("department", value)
                   }
+                  disabled={admin.role === "dept_admin"}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEPARTMENTS.map((dept) => (
-                      <SelectItem key={dept.value} value={dept.value}>
-                        {dept.label}
+                    {DEPARTMENTS.map((d) => (
+                      <SelectItem key={d.value} value={d.value}>
+                        {d.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -301,45 +367,39 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
           {/* Payment Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Payment Information
+              <CreditCard className="h-5 w-5" /> Payment Information
             </h3>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="type">
+              <div>
+                <Label>
                   Payment Type <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={formData.type}
                   onValueChange={(value) => handleInputChange("type", value)}
+                  disabled={allowedPaymentTypes.length === 1}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select payment type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {allowedPaymentTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
+                    {allowedPaymentTypes.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="amount">
+              <div>
+                <Label>
                   Amount (₦) <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="amount"
                   type="number"
                   value={formData.amount}
-                  onChange={(e) => handleInputChange("amount", e.target.value)}
-                  placeholder="Enter amount"
-                  min="0"
-                  step="0.01"
-                  required
+                  readOnly
+                  placeholder="Auto-calculated"
                 />
               </div>
             </div>
@@ -348,26 +408,21 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
           {/* Contact Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Contact Information (Optional)
+              <Mail className="h-5 w-5" /> Contact Information (Optional)
             </h3>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+              <div>
+                <Label>Email</Label>
                 <Input
-                  id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder="Enter email address"
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number</Label>
+              <div>
+                <Label>Phone Number</Label>
                 <Input
-                  id="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={(e) =>
                     handleInputChange("phoneNumber", e.target.value)
@@ -396,21 +451,25 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
             </div>
 
             {formData.isExecutive && (
-              <div className="space-y-2">
-                <Label htmlFor="scope">
+              <div>
+                <Label>
                   Executive Scope <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={formData.scope}
                   onValueChange={(value) => handleInputChange("scope", value)}
+                  disabled={
+                    admin.role === "dept_admin" ||
+                    admin.role === "college_admin"
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select executive scope" />
                   </SelectTrigger>
                   <SelectContent>
-                    {EXECUTIVE_SCOPES.map((scope) => (
-                      <SelectItem key={scope.value} value={scope.value}>
-                        {scope.label}
+                    {EXECUTIVE_SCOPES.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -419,8 +478,8 @@ export const CreateManualPayment: React.FC<CreateManualPaymentProps> = ({
             )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 justify-end pt-4 border-t">
+          {/* Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
             <Button
               type="button"
               variant="outline"
