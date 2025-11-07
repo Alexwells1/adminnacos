@@ -28,12 +28,18 @@ interface CreateManualPaymentProps {
 }
 
 // FIX: Use proper department enum values that match your types
-const DEPARTMENTS = [
-  { value: "COMSSA", label: "Computer Science (COMSSA)" },
-  { value: "SENIFSA", label: "Software Engineering (SENIFSA)" },
-  { value: "CYDASA", label: "Cyber Security (CYDASA)" },
-  { value: "ICITSA", label: "Information Technology (ICITSA)" },
-];
+  const DEPARTMENTS = [
+    { value: "Computer Science", label: "Computer Science (COMSSA)" },
+    {
+      value: "Software Engr & Information Systems",
+      label: "Software Engineering (SENIFSA)",
+    },
+    { value: "Cybersecurity & Data Science", label: "Cyber Security (CYDASA)" },
+    {
+      value: "ICT & Information Technology",
+      label: "Information Technology (ICITSA)",
+    },
+  ];
 
 const LEVELS = [
   { value: "100", label: "Level 100" },
