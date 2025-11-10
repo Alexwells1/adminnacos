@@ -33,7 +33,7 @@ export const PaymentsPagination: React.FC<PaymentsPaginationProps> = ({
     });
   };
 
-  if (pagination.totalPages <= 1) return null;
+  if (!pagination.totalPages || pagination.totalPages < 1) return null;
 
   return (
     <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
