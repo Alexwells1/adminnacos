@@ -84,12 +84,23 @@ export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
     return scopeVariants[scope] || "outline";
   };
 
-  const formatScopeLabel = (scope: string) => {
+const formatScopeLabel = (scope: string | string[]) => {
+  if (Array.isArray(scope)) {
     return scope
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
+      .map((s) =>
+        s
+          .split("_")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ")
+      )
+      .join(", ");
+  }
+  return scope
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
 
   if (loading && executives.length === 0) {
     return (
@@ -168,7 +179,11 @@ export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
                 </td>
                 <td className="py-4 px-4">
                   {/* FIX: Ensure the variant prop gets the correct type */}
-                  <Badge variant={getScopeBadgeVariant(executive.scope)}>
+                  <Badge
+                    variant={getScopeBadgeVariant(
+                      executive.scope[0] ?? "other"
+                    )}
+                  >
                     {formatScopeLabel(executive.scope)}
                   </Badge>
                 </td>
@@ -215,8 +230,8 @@ export const ExecutiveTable: React.FC<ExecutiveTableProps> = ({
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-gray-600">
-              Are you sure you want to remove this stakeholder? This action cannot
-              be undone.
+              Are you sure you want to remove this stakeholder? This action
+              cannot be undone.
             </p>
             {selectedExecutive && (
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
