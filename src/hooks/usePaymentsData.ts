@@ -49,10 +49,12 @@ export const usePaymentsData = () => {
   const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false); 
-  const [loadTime, setLoadTime] = useState<number>(0); 
-  const [progress, setProgress] = useState(0); 
-  const [cacheStatus, setCacheStatus] = useState<"fresh" | "stale" | "none">("none");
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadTime, setLoadTime] = useState<number>(0);
+  const [progress, setProgress] = useState(0);
+  const [cacheStatus, setCacheStatus] = useState<"fresh" | "stale" | "none">(
+    "none"
+  );
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -89,13 +91,22 @@ export const usePaymentsData = () => {
   // Apply client-side filters
   // =========================
   const applyClientSideFilters = useCallback(
-    (payments: Payment[], currentFilters: any, currentSearchQuery: string = "") => {
+    (
+      payments: Payment[],
+      currentFilters: any,
+      currentSearchQuery: string = ""
+    ) => {
       let filtered = [...payments];
-      if (currentSearchQuery.trim()) filtered = searchPayments(filtered, currentSearchQuery);
-      if (currentFilters.level !== "all") filtered = filterPaymentsByLevel(filtered, currentFilters.level);
-      if (currentFilters.type !== "all") filtered = filtered.filter((p) => p.type === currentFilters.type);
+      if (currentSearchQuery.trim())
+        filtered = searchPayments(filtered, currentSearchQuery);
+      if (currentFilters.level !== "all")
+        filtered = filterPaymentsByLevel(filtered, currentFilters.level);
+      if (currentFilters.type !== "all")
+        filtered = filtered.filter((p) => p.type === currentFilters.type);
       if (currentFilters.department !== "all")
-        filtered = filtered.filter((p) => p.department === currentFilters.department);
+        filtered = filtered.filter(
+          (p) => p.department === currentFilters.department
+        );
       if (currentFilters.startDate) {
         const start = new Date(currentFilters.startDate);
         filtered = filtered.filter((p) => new Date(p.createdAt) >= start);
@@ -106,9 +117,15 @@ export const usePaymentsData = () => {
         filtered = filtered.filter((p) => new Date(p.createdAt) <= end);
       }
       if (currentFilters.sort === "newest")
-        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        filtered.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       else if (currentFilters.sort === "oldest")
-        filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        filtered.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
       else if (currentFilters.sort === "amount")
         filtered.sort((a, b) => b.amount - a.amount);
       return filtered;
@@ -119,69 +136,70 @@ export const usePaymentsData = () => {
   // =========================
   // LOAD PAYMENTS
   // =========================
-const loadPayments = useCallback(
-  async (isSearch = false, pageOverride?: number, search?: string) => {
-    const pageToLoad = pageOverride || pagination.page;
-    if (!isSearch) setLoading(true);
-    if (isSearch) setSearchLoading(true);
-    setCacheStatus("none");
-    setProgress(10);
+  const loadPayments = useCallback(
+    async (isSearch = false, pageOverride?: number, search?: string) => {
+      const pageToLoad = pageOverride || pagination.page;
+      if (!isSearch) setLoading(true);
+      if (isSearch) setSearchLoading(true);
+      setCacheStatus("none");
+      setProgress(10);
 
-    const startTime = Date.now();
-    const params: any = {
-      page: pageToLoad.toString(),
-      limit: pagination.limit.toString(),
-    };
-    if (filters.type !== "all") params.type = filters.type;
-    if (filters.department !== "all") params.department = filters.department;
-    if (filters.startDate) params.startDate = filters.startDate;
-    if (filters.endDate) params.endDate = filters.endDate;
-    if (search) params.search = search;
+      const startTime = Date.now();
+      const params: any = {
+        page: pageToLoad.toString(),
+        limit: pagination.limit.toString(),
+      };
+      if (filters.type !== "all") params.type = filters.type;
+      if (filters.department !== "all") params.department = filters.department;
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+      if (search) params.search = search;
 
-    try {
-      const response = await paymentService.getPayments(params);
-      setProgress(60);
+      try {
+        const response = await paymentService.getPayments(params);
+        setProgress(60);
 
-      const { payments: paymentsData = [], pagination: serverPagination } =
-        response;
+        const { payments: paymentsData = [], pagination: serverPagination } =
+          response;
 
-      // Store all payments if not searching
-      if (!search) setAllPayments(paymentsData);
+        // Store all payments if not searching
+        if (!search) setAllPayments(paymentsData);
 
-      // Apply client-side filters if needed
-      const filtered = applyClientSideFilters(
-        paymentsData,
-        filters,
-        search || ""
-      );
+        // Apply client-side filters if needed
+        const filtered = applyClientSideFilters(
+          paymentsData,
+          filters,
+          search || ""
+        );
 
-      setFilteredPayments(filtered);
+        setFilteredPayments(filtered);
 
-      // ✅ Always prefer backend pagination
-      setPagination((prev) => ({
-        page: serverPagination?.page || prev.page,
-        limit: serverPagination?.limit || prev.limit,
-        total: serverPagination?.total || filtered.length,
-        totalPages: Math.max(serverPagination?.totalPages || 1, 1),
-      }));
+        // ✅ Always prefer backend pagination
+        setPagination((prev) => ({
+          page: serverPagination?.page || prev.page,
+          limit: serverPagination?.limit || prev.limit,
+          total: serverPagination?.total || filtered.length,
+          totalPages: Math.max(serverPagination?.totalPages || 1, 1),
+        }));
 
-      setProgress(90);
-      setCacheStatus("fresh");
-      setLoadTime(Date.now() - startTime);
-      setProgress(100);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to load payments");
-      setProgress(0);
-    } finally {
-      setLoading(false);
-      setSearchLoading(false);
-      isInitialLoadRef.current = false;
-      setTimeout(() => setProgress(0), 500);
-    }
-  },
-  [filters, pagination.limit, pagination.page, applyClientSideFilters]
-);
-
+        setProgress(90);
+        setCacheStatus("fresh");
+        setLoadTime(Date.now() - startTime);
+        setProgress(100);
+      } catch (error: any) {
+        toast.error(
+          error?.response?.data?.message || "Failed to load payments"
+        );
+        setProgress(0);
+      } finally {
+        setLoading(false);
+        setSearchLoading(false);
+        isInitialLoadRef.current = false;
+        setTimeout(() => setProgress(0), 500);
+      }
+    },
+    [filters, pagination.limit, pagination.page, applyClientSideFilters]
+  );
 
   // =========================
   // HANDLE SEARCH
@@ -210,9 +228,9 @@ const loadPayments = useCallback(
   const handlePageChange = useCallback(
     (newPage: number) => {
       setPagination((prev) => ({ ...prev, page: newPage }));
-      loadPayments(Boolean(searchQuery), newPage, searchQuery);
+ 
     },
-    [loadPayments, searchQuery]
+    [setPagination]
   );
 
   // =========================
@@ -233,14 +251,15 @@ const loadPayments = useCallback(
   // EFFECTS
   // =========================
   useEffect(() => {
-    loadPayments(Boolean(debouncedSearchQuery), 1, debouncedSearchQuery);
-  }, [debouncedSearchQuery, debouncedFilters, loadPayments]);
+    loadPayments(
+      Boolean(debouncedSearchQuery),
+      pagination.page,
+      debouncedSearchQuery
+    );
+  }, [debouncedSearchQuery, debouncedFilters, pagination.page, loadPayments]);
 
   return {
-    payments: filteredPayments.slice(
-      (pagination.page - 1) * pagination.limit,
-      pagination.page * pagination.limit
-    ),
+    payments: filteredPayments,
     allPayments,
     filteredPayments,
     loading,

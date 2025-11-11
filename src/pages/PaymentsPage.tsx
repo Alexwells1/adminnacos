@@ -9,7 +9,7 @@ import { PaymentTable } from "@/components/Payments/PaymentTable";
 
 import { ProgressBar } from "@/components/Payments/ProgressBar";
 
-import  { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { usePaymentsData } from "@/hooks/usePaymentsData";
 import React from "react";
 
@@ -63,7 +63,7 @@ export const PaymentsPage: React.FC = () => {
             filters={filters}
             onFiltersChange={setFilters}
             onExportCSV={() => {}}
-            onExportPDF={() => {}} 
+            onExportPDF={() => {}}
             canExport={hasPermission("canExportData")}
           />
         </CardContent>
@@ -73,7 +73,6 @@ export const PaymentsPage: React.FC = () => {
       <ProgressBar progress={progress} loading={loading} />
 
       {/* Prefetch Loading Indicator */}
-
 
       {/* Payment Table or Skeleton */}
       <Card>
