@@ -3,12 +3,13 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface StatsCardProps {
-  title: string;
+  title: React.ReactNode; 
   value: string | number;
   subtitle?: string;
-  color?: "blue" | "green" | "purple" | "orange" | "red";
+  color?: "blue" | "green" | "purple" | "orange" | "red" | "teal";
   icon?: React.ReactNode;
 }
+
 
 export const StatsCard: React.FC<StatsCardProps> = ({
   title,

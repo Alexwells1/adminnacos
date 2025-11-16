@@ -75,8 +75,12 @@ export interface Executive extends BaseEntity {
 
 // Account Stats Types
 export interface AccountStats {
+  grossRevenue: any;
   totalRevenue: number;
+  paymentCount: number;
+  maintenanceCollected: number;
   expenses: number;
+  expenseCount: number;
   availableBalance: number;
   lastUpdated: string;
   _id: string;
@@ -92,8 +96,11 @@ export interface FinancialAccounts {
 }
 
 export interface FinancialStats extends BaseEntity {
+  grossTotalRevenue: number;
   accounts: FinancialAccounts;
   totalMaintenance: number;
+  grossCollegeRevenue: number;
+  grossDepartmentalRevenue: number;
   maintenanceExpenses: number;
   availableMaintenance: number;
   totalCollegeRevenue: number;
@@ -157,6 +164,8 @@ export interface ExecutiveVsRegular {
 }
 
 export interface DashboardStats {
+  executivePaymentsSkipped: any;
+  grossTotalRevenue: any;
   // Core metrics
   totalPayments: number;
   totalRevenue: number;

@@ -274,8 +274,9 @@ export const paymentService = {
     return response.data;
   },
 
-  exportPaymentsCSV: async (): Promise<Blob> => {
+  exportPaymentsCSV: async (params: any = {}): Promise<Blob> => {
     const response = await axios.get("/admin/payments/export/csv", {
+      params,
       responseType: "blob",
     });
     return response.data;

@@ -7,10 +7,9 @@ interface LevelsTabProps {
 }
 
 export const LevelsTab: React.FC<LevelsTabProps> = ({ stats }) => {
-
   useEffect(() => {
     console.log("LevelsTab stats:", stats.levelBreakdown);
-  })
+  });
   return (
     <>
       <h2 className="text-lg font-semibold">Level Analysis</h2>

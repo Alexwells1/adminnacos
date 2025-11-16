@@ -71,7 +71,7 @@ export const PaymentFilters: React.FC<PaymentFiltersProps> = ({
   onExportCSV,
   onExportPDF,
   canExport,
-  isExporting = false,
+  isExporting,
 }) => {
   const { admin, isRole } = useAuth();
 

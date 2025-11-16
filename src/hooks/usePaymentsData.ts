@@ -44,6 +44,7 @@ const searchPayments = (payments: Payment[], query: string) => {
 export const usePaymentsData = () => {
   const { admin, hasPermission } = useAuth();
   const { clearPaymentsCache } = usePaymentsCache();
+  const [isExporting, setIsExporting] = useState(false);
 
   const [allPayments, setAllPayments] = useState<Payment[]>([]);
   const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
@@ -228,7 +229,6 @@ export const usePaymentsData = () => {
   const handlePageChange = useCallback(
     (newPage: number) => {
       setPagination((prev) => ({ ...prev, page: newPage }));
- 
     },
     [setPagination]
   );
@@ -246,6 +246,46 @@ export const usePaymentsData = () => {
     setRefreshing(false);
     toast.success("Payment created successfully. Cache cleared.");
   }, [clearPaymentsCache, loadPayments]);
+
+  const exportCSV = async () => {
+    const params: any = {};
+
+    try {
+      setIsExporting(true);
+
+      // Build query params from filters
+      if (filters.type !== "all") params.type = filters.type;
+      if (filters.department !== "all") params.department = filters.department;
+      if (filters.level !== "all") params.level = filters.level;
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+
+      // Call backend
+      const fileBlob = await paymentService.exportPaymentsCSV(params);
+      let name = filters.type;
+      if (filters.type == "college") name = "NACOS";
+
+      // Download file
+      const url = window.URL.createObjectURL(fileBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${name}_${filters.department}_payments.csv`;
+      a.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+
+      toast.success("CSV exported successfully!");
+    } catch (error: any) {
+      console.error("Export CSV Error:", error);
+      toast.error(
+        error?.response?.data?.message || "Failed to export CSV. Try again."
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // =========================
   // EFFECTS
@@ -279,5 +319,7 @@ export const usePaymentsData = () => {
     handlePaymentCreated,
     hasPermission,
     admin,
+    exportCSV,
+    isExporting,
   };
 };

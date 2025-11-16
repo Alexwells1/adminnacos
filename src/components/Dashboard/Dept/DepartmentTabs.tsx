@@ -1,5 +1,11 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Home, PieChart, Users, FileText } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface DepartmentTabsProps {
   activeTab: string;
@@ -18,38 +24,60 @@ export const DepartmentTabs: React.FC<DepartmentTabsProps> = ({
   studentsContent,
   recentContent,
 }) => {
+  const tabs = [
+    {
+      value: "overview",
+      icon: <Home className="w-5 h-5" />,
+      label: "Overview",
+      content: overviewContent,
+    },
+    {
+      value: "levels",
+      icon: <PieChart className="w-5 h-5" />,
+      label: "Levels",
+      content: levelsContent,
+    },
+    {
+      value: "students",
+      icon: <Users className="w-5 h-5" />,
+      label: "Students",
+      content: studentsContent,
+    },
+    {
+      value: "recent",
+      icon: <FileText className="w-5 h-5" />,
+      label: "Recent",
+      content: recentContent,
+    },
+  ];
+
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
       <TabsList className="grid w-full grid-cols-4 h-auto p-1">
-        <TabsTrigger value="overview" className="text-sm py-2">
-          Overview
-        </TabsTrigger>
-        <TabsTrigger value="levels" className="text-sm py-2">
-          Levels
-        </TabsTrigger>
-        <TabsTrigger value="students" className="text-sm py-2">
-          Students
-        </TabsTrigger>
-        <TabsTrigger value="recent" className="text-sm py-2">
-          Recent
-        </TabsTrigger>
+        {tabs.map((tab) => (
+          <Tooltip key={tab.value}>
+            <TooltipTrigger asChild>
+              <TabsTrigger
+                value={tab.value}
+                className="flex justify-center py-2"
+              >
+                {tab.icon}
+              </TabsTrigger>
+            </TooltipTrigger>
+            <TooltipContent>{tab.label}</TooltipContent>
+          </Tooltip>
+        ))}
       </TabsList>
 
-      <TabsContent value="overview" className="space-y-6 mt-6">
-        {overviewContent}
-      </TabsContent>
-
-      <TabsContent value="levels" className="space-y-6 mt-6">
-        {levelsContent}
-      </TabsContent>
-
-      <TabsContent value="students" className="space-y-6 mt-6">
-        {studentsContent}
-      </TabsContent>
-
-      <TabsContent value="recent" className="space-y-6 mt-6">
-        {recentContent}
-      </TabsContent>
+      {tabs.map((tab) => (
+        <TabsContent
+          key={tab.value}
+          value={tab.value}
+          className="space-y-6 mt-6"
+        >
+          {tab.content}
+        </TabsContent>
+      ))}
     </Tabs>
   );
 };

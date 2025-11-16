@@ -32,6 +32,8 @@ export const PaymentsPage: React.FC = () => {
     handlePageChange,
     handleRefresh,
     handlePaymentCreated,
+    exportCSV,
+    isExporting,
   } = usePaymentsData();
 
   return (
@@ -62,9 +64,10 @@ export const PaymentsPage: React.FC = () => {
           <PaymentFilters
             filters={filters}
             onFiltersChange={setFilters}
-            onExportCSV={() => {}}
+            onExportCSV={exportCSV}
             onExportPDF={() => {}}
             canExport={hasPermission("canExportData")}
+            isExporting={isExporting}
           />
         </CardContent>
       </Card>
