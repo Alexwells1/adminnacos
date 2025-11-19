@@ -23,6 +23,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
     purple: "border-l-purple-500",
     orange: "border-l-orange-500",
     red: "border-l-red-500",
+    teal: "border-l-teal-500",
   };
 
   return (

@@ -97,6 +97,7 @@ export interface FinancialAccounts {
 
 export interface FinancialStats extends BaseEntity {
   grossTotalRevenue: number;
+  executivePaymentsSkipped: number;
   accounts: FinancialAccounts;
   totalMaintenance: number;
   grossCollegeRevenue: number;

@@ -15,6 +15,7 @@ export interface FinancialStats {
   totalMaintenance: number;
   maintenanceExpenses: number;
   availableMaintenance: number;
+  executivePaymentsSkipped: number;
 
   // Independent accounts
   accounts: {

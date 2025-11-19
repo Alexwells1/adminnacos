@@ -75,12 +75,15 @@ export const useCollegeData = () => {
         limit: 1000,
       });
 
-      const dashboardStats: DashboardStats = {
-        totalPayments: allCollegePayments.payments?.length || 0,
-        totalRevenue: freshFinancialData.totalCollegeRevenue || 0,
-        financialStats: freshFinancialData,
-        recentPayments: recentPaymentsResponse.payments || [],
-      };
+     const dashboardStats: DashboardStats = {
+       totalPayments: allCollegePayments.payments?.length || 0,
+       totalRevenue: freshFinancialData.totalCollegeRevenue || 0,
+       financialStats: freshFinancialData,
+       recentPayments: recentPaymentsResponse.payments || [],
+       grossTotalRevenue: freshFinancialData.grossTotalRevenue || 0,
+       executivePaymentsSkipped:freshFinancialData?.executivePaymentsSkipped || 0,
+     };
+
 
       setStats(dashboardStats);
       setRecentPayments(recentPaymentsResponse.payments || []);

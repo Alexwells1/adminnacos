@@ -104,17 +104,20 @@ export const useDepartmentData = () => {
       )
       .slice(0, 10);
 
-    return {
-      totalPayments: departmentPayments.length,
-      totalRevenue: departmentAccount?.totalRevenue || 0,
-      totalDeptPayments: departmentPayments.length,
-      totalDeptRevenue: departmentAccount?.totalRevenue || 0,
-      levelWiseDept,
-      recentDeptPayments,
-      departmentStudents: departmentPayments,
-      department: user?.department,
-      financialStats: financialData,
-    };
+  return {
+    totalPayments: departmentPayments.length,
+    totalRevenue: departmentAccount?.totalRevenue || 0,
+    totalDeptPayments: departmentPayments.length,
+    totalDeptRevenue: departmentAccount?.totalRevenue || 0,
+    levelWiseDept,
+    recentDeptPayments,
+    departmentStudents: departmentPayments,
+    department: user?.department,
+    financialStats: financialData,
+    executivePaymentsSkipped: financialData.executivePaymentsSkipped || 0,
+    grossTotalRevenue: financialData.grossTotalRevenue || 0,
+  };
+
   };
 
   const loadDashboardData = async (forceRefresh = false) => {

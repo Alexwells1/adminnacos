@@ -10,6 +10,7 @@ import {
 import type { FinancialStats } from "@/types/expense.types";
 import { AccountBalanceCard } from "./AccountBalanceCard";
 import { AccountBalanceSkeleton } from "./AccountBalanceSkeleton";
+import { Home, Building, Users } from "lucide-react";
 
 // Define the account types
 type AccountKey =
@@ -28,15 +29,19 @@ interface ExpenseTabsProps {
   cacheAvailable: boolean;
 }
 
+// Map tabs to icons
+const TAB_ICONS: Record<string, React.ReactNode> = {
+  overview: <Home className="w-5 h-5" />,
+  college: <Building className="w-5 h-5" />,
+  departmental: <Users className="w-5 h-5" />,
+};
+
 const getAvailableAccounts = (
   adminRole: string,
   adminDepartment?: string
 ): AccountKey[] => {
-  let accounts: AccountKey[] = [];
-
-  if (adminRole === "college_admin") {
-    accounts = ["college_general"];
-  } else if (adminRole === "dept_admin" && adminDepartment) {
+  if (adminRole === "college_admin") return ["college_general"];
+  if (adminRole === "dept_admin" && adminDepartment) {
     const departmentMap = {
       "Computer Science": "dept_comssa",
       "Software Engr & Information Systems": "dept_senifsa",
@@ -45,9 +50,10 @@ const getAvailableAccounts = (
     } as const;
     const account =
       departmentMap[adminDepartment as keyof typeof departmentMap];
-    if (account) accounts = [account];
-  } else if (adminRole === "super_admin" || adminRole === "director_finance") {
-    accounts = [
+    return account ? [account] : [];
+  }
+  if (adminRole === "super_admin" || adminRole === "director_finance") {
+    return [
       "college_general",
       "dept_comssa",
       "dept_icitsa",
@@ -56,30 +62,15 @@ const getAvailableAccounts = (
       "maintenance",
     ];
   }
-
-
-  return accounts;
+  return [];
 };
 
 const getVisibleTabs = (adminRole: string) => {
   const tabs = ["overview"];
-
-  if (
-    adminRole === "super_admin" ||
-    adminRole === "director_finance" ||
-    adminRole === "college_admin"
-  ) {
+  if (["super_admin", "director_finance", "college_admin"].includes(adminRole))
     tabs.push("college");
-  }
-
-  if (
-    adminRole === "super_admin" ||
-    adminRole === "director_finance" ||
-    adminRole === "dept_admin"
-  ) {
+  if (["super_admin", "director_finance", "dept_admin"].includes(adminRole))
     tabs.push("departmental");
-  }
-
   return tabs;
 };
 
@@ -88,28 +79,19 @@ const getAccountBalances = (
   adminRole: string,
   adminDepartment?: string
 ): Record<AccountKey, number> => {
-  if (!financialStats) {
-    return {} as Record<AccountKey, number>;
-  }
-
+  if (!financialStats) return {} as Record<AccountKey, number>;
   const balances: Partial<Record<AccountKey, number>> = {};
-  const availableAccounts = getAvailableAccounts(adminRole, adminDepartment);
+  const accounts = getAvailableAccounts(adminRole, adminDepartment);
 
-  availableAccounts.forEach((account) => {
-    const balance =
+  accounts.forEach((account) => {
+    balances[account] =
       account === "maintenance"
         ? financialStats.availableMaintenance
         : financialStats.accounts[account]?.availableBalance || 0;
-
-    balances[account] = balance;
-
   });
-
-
 
   return balances as Record<AccountKey, number>;
 };
-
 
 export const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
   adminRole = "",
@@ -117,8 +99,6 @@ export const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
   financialStats,
   loading,
 }) => {
-
-
   const visibleTabs = getVisibleTabs(adminRole);
   const accountBalances = getAccountBalances(
     financialStats,
@@ -126,22 +106,19 @@ export const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
     adminDepartment
   );
 
-
   if (visibleTabs.length <= 1) return null;
-
 
   return (
     <Tabs defaultValue="overview" className="space-y-4">
       <TabsList>
         {visibleTabs.map((tab) => (
-          <TabsTrigger key={tab} value={tab}>
-            {tab === "overview" && "Account Overview"}
-            {tab === "college" && "College Accounts"}
-            {tab === "departmental" && "Departmental Accounts"}
+          <TabsTrigger key={tab} value={tab} title={tab}>
+            {TAB_ICONS[tab]}
           </TabsTrigger>
         ))}
       </TabsList>
 
+      {/* Overview Tab */}
       <TabsContent value="overview" className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {loading ? (
@@ -160,8 +137,7 @@ export const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
                   stats={financialStats}
                 />
               ))}
-              {(adminRole === "super_admin" ||
-                adminRole === "director_finance") && (
+              {["super_admin", "director_finance"].includes(adminRole) && (
                 <Card className="bg-gradient-to-r from-blue-50 to-green-50">
                   <CardHeader>
                     <CardTitle className="text-lg">Total Net Balance</CardTitle>
@@ -208,6 +184,7 @@ export const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
         </div>
       </TabsContent>
 
+      {/* College Tab */}
       {visibleTabs.includes("college") && (
         <TabsContent value="college">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -244,6 +221,7 @@ export const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
         </TabsContent>
       )}
 
+      {/* Departmental Tab */}
       {visibleTabs.includes("departmental") && (
         <TabsContent value="departmental">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
