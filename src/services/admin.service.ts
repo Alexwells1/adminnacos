@@ -22,8 +22,6 @@ import type {
   CreateExecutiveData,
   CreateAdminData,
 } from "@/types/admin.types";
-import { Search } from "lucide-react";
-import { departments } from "@/constants/data";
 
 // Re-export types for convenience
 export type {

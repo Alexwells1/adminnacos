@@ -1,3 +1,5 @@
+import type { SetStateAction } from "react";
+
 // Base Types
 export interface BaseEntity {
   _id: string;
