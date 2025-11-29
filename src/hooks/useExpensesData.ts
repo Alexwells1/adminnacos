@@ -11,15 +11,26 @@ import { useAuth } from "@/contexts/useAuth";
 
 export const useExpensesData = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+
+  // GLOBAL TOTALS FROM BACKEND
+  const [totals, setTotals] = useState({
+    totalAmount: 0,
+    collegeCount: 0,
+    departmentalCount: 0,
+    maintenanceCount: 0,
+  });
+
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [cacheAvailable, setCacheAvailable] = useState(true);
+
   const [filters, setFilters] = useState<ExpenseFilters>({
     page: 1,
     limit: 10,
   });
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [cacheAvailable, setCacheAvailable] = useState(true);
 
   const { admin, isRole } = useAuth();
   const {
@@ -38,7 +49,6 @@ export const useExpensesData = () => {
     totalPages: 0,
   });
 
-  // Permission checks
   const canCreate = isRole([
     "super_admin",
     "director_finance",
@@ -46,136 +56,108 @@ export const useExpensesData = () => {
     "dept_admin",
   ]);
 
-  const canManage = isRole([
-    "super_admin",
-    "director_finance",
-    "college_admin",
-    "dept_admin",
-  ]);
 
+  const canManage = canCreate;
+
+  
   const canViewAll = isRole(["super_admin", "director_finance"]);
 
-  // Role-based expense filtering
-  // In your useExpensesData hook, update the getFilteredExpenses function:
-  const getFilteredExpenses = useCallback(
-    (expensesList: Expense[]) => {
-      if (canViewAll) {
-        return expensesList;
-      } else if (isRole("college_admin")) {
-        return expensesList.filter(
-          (expense) =>
-            expense.type === "college" || expense.account === "college_general"
-        );
-      } else if (isRole("dept_admin") && admin?.department) {
-        // Map admin department to expense department code
-        const departmentMap = {
-          "Computer Science": "COMSSA",
-          "ICT & Information Technology": "ICITSA",
-          "Cybersecurity & Data Science": "CYDASA",
-          "Software Engr & Information Systems": "SENIFSA",
-        } as const;
+  // --------------------------------
+  // LOAD EXPENSES + GLOBAL STATS
+  // --------------------------------
 
-        const userDept =
-          departmentMap[admin.department as keyof typeof departmentMap];
-        return expensesList.filter(
-          (expense) =>
-            expense.type === "departmental" && expense.department === userDept
-        );
+const loadExpenses = useCallback(
+  async (forceRefresh = false) => {
+    try {
+      setLoading(true);
+
+      // ✅ Destructure all relevant fields at the start
+      const {
+        page: currentPage = 1,
+        limit: currentLimit = 10,
+        department,
+      } = filters;
+
+      const filtersKey = JSON.stringify({
+        page: currentPage,
+        limit: currentLimit,
+        role: admin?.role,
+        dept: admin?.department,
+      });
+
+      const cacheKey = CACHE_KEYS.EXPENSES(
+        currentPage,
+        currentLimit,
+        filtersKey
+      );
+
+      if (!forceRefresh && cacheAvailable && isCacheValid(cacheKey)) {
+        const cached = getFromCache<{
+          expenses: Expense[];
+          pagination: any;
+          totals: any;
+        }>(cacheKey);
+
+        if (cached) {
+          setExpenses(cached.expenses);
+          setPagination(cached.pagination);
+          setTotals(cached.totals);
+          setLoading(false);
+          return;
+        }
       }
-      return [];
-    },
-    [canViewAll, isRole, admin?.department]
-  );
 
-  const loadExpenses = useCallback(
-    async (forceRefresh = false) => {
-      try {
-        setLoading(true);
+      // 🔹 Pass the department directly from destructured filters
+      const response = await financialService.getExpenses(
+        currentPage,
+        currentLimit,
+        searchTerm,
+        department
+      );
 
-        const currentPage = filters.page || 1;
-        const currentLimit = filters.limit || 10;
+      setExpenses(response.expenses || []);
+      setTotals(response.totals || totals);
 
-        const filtersKey = JSON.stringify({
-          page: currentPage,
-          limit: currentLimit,
-          department: filters.department,
-          adminRole: admin?.role,
-          adminDepartment: admin?.department,
+      const paginationData = {
+        page: response.pagination.page,
+        limit: response.pagination.limit,
+        total: response.pagination.total,
+        totalPages: response.pagination.totalPages,
+      };
+
+      setPagination(paginationData);
+
+      if (cacheAvailable) {
+        const optimized = optimizeDataForCaching(response.expenses || []);
+        const saved = saveToCache(cacheKey, {
+          expenses: optimized,
+          pagination: paginationData,
+          totals: response.totals,
         });
-        const cacheKey = CACHE_KEYS.EXPENSES(
-          currentPage,
-          currentLimit,
-          filtersKey
-        );
 
-        // Check cache first (unless force refresh)
-        if (!forceRefresh && cacheAvailable && isCacheValid(cacheKey)) {
-          const cachedData = getFromCache<{
-            expenses: Expense[];
-            pagination: any;
-            filteredExpenses: Expense[];
-          }>(cacheKey);
-
-          if (cachedData) {
-            setExpenses(cachedData.expenses);
-            setPagination(cachedData.pagination);
-            setLoading(false);
-            return;
-          }
-        }
-
-        const response = await financialService.getExpenses(
-          currentPage,
-          currentLimit
-        );
-
-        // Apply role-based filtering
-        const filteredExpenses = getFilteredExpenses(response.expenses || []);
-        setExpenses(filteredExpenses);
-
-        const paginationData = {
-          page: response.pagination?.page || 1,
-          limit: response.pagination?.limit || 10,
-          total: filteredExpenses.length,
-          totalPages: Math.ceil(filteredExpenses.length / currentLimit),
-        };
-        setPagination(paginationData);
-
-        // Try to save to cache with optimized data
-        if (cacheAvailable) {
-          const optimizedExpenses = optimizeDataForCaching(
-            response.expenses || []
-          );
-          const cacheData = {
-            expenses: optimizedExpenses,
-            pagination: paginationData,
-            filteredExpenses: optimizeDataForCaching(filteredExpenses),
-          };
-
-          const saved = saveToCache(cacheKey, cacheData);
-          if (!saved) {
-            setCacheAvailable(false);
-          }
-        }
-      } catch (error: any) {
-        const errorMessage =
-          error.response?.data?.message || "Failed to load expenses";
-        toast.error(errorMessage);
-      } finally {
-        setLoading(false);
+        if (!saved) setCacheAvailable(false);
       }
-    },
-    [
-      filters.page,
-      filters.limit,
-      filters.department,
-      getFilteredExpenses,
-      admin?.role,
-      admin?.department,
-      cacheAvailable,
-    ]
-  );
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load expenses";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  },
+  [
+    filters, 
+    admin?.role,
+    admin?.department,
+    cacheAvailable,
+    searchTerm,
+  ]
+);
 
+
+  // --------------------------------
+  // CREATE EXPENSE
+  // --------------------------------
   const handleCreateExpense = async (data: CreateExpenseData) => {
     try {
       setCreating(true);
@@ -183,16 +165,18 @@ export const useExpensesData = () => {
       clearExpensesCache();
       await loadExpenses(true);
       toast.success("Expense created successfully!");
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Failed to create expense";
-      toast.error(errorMessage);
-      throw error;
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to create expenses";
+      toast.error(message);
     } finally {
       setCreating(false);
     }
   };
 
+  // --------------------------------
+  // DELETE EXPENSE
+  // --------------------------------
   const handleDeleteExpense = async (id: string) => {
     try {
       setDeleting(id);
@@ -200,10 +184,10 @@ export const useExpensesData = () => {
       clearExpensesCache();
       await loadExpenses(true);
       toast.success("Expense deleted successfully!");
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Failed to delete expense";
-      toast.error(errorMessage);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to delete expenses";
+      toast.error(message);
     } finally {
       setDeleting(null);
     }
@@ -213,56 +197,54 @@ export const useExpensesData = () => {
     setFilters((prev) => ({ ...prev, page: newPage }));
   };
 
-  const handleFilterChange = (key: keyof ExpenseFilters, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
-  };
+const handleFilterChange = (key: keyof ExpenseFilters, value: any) => {
+  setFilters((prev) => {
+    const updated = { ...prev, [key]: value, page: 1 };
+    console.log("🚀 [handleFilterChange] updated:", updated);
+    return updated;
+  });
+};
+
+useEffect(() => {
+  loadExpenses(true); // force refresh whenever filters change
+}, [filters]);
+
+
 
   const handleRefresh = () => {
     setSearchTerm("");
     clearExpensesCache();
     setCacheAvailable(true);
     loadExpenses(true);
-    toast.info("Cache cleared and data refreshed");
+    toast.info("Cache cleared & refreshed");
   };
 
-  // Apply search filter on top of role-based filtering
-  const searchFilteredExpenses = useMemo(
-    () =>
-      expenses.filter(
-        (expense) =>
-          expense.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          expense.description
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          expense.createdBy.name
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
-      ),
-    [expenses, searchTerm]
-  );
+  // --------------------------------
+  // SEARCH (LOCAL)
+  // --------------------------------
+const searchFilteredExpenses = expenses;
 
-  // Calculate totals based on visible expenses
-  const stats = useMemo(() => {
-    const totalAmount = searchFilteredExpenses.reduce(
-      (sum, expense) => sum + expense.amount,
-      0
-    );
-    const collegeExpenses = searchFilteredExpenses.filter(
-      (e) => e.type === "college"
-    );
-    const departmentalExpenses = searchFilteredExpenses.filter(
-      (e) => e.type === "departmental"
-    );
-    const maintenanceExpenses = searchFilteredExpenses.filter(
-      (e) => e.paymentMethod === "maintenance_balance"
-    );
+
+useEffect(() => {
+  // Reset to page 1 whenever the search term changes
+  setFilters((prev) => ({ ...prev, page: 1 }));
+
+  const handler = setTimeout(() => {
+    loadExpenses(true); // force refresh
+  }, 500); // 500ms debounce
+
+  return () => clearTimeout(handler);
+}, [searchTerm]);
+
+  // --------------------------------
+  // PAGE TOTALS (LOCAL ONLY)
+  // --------------------------------
+  const pageStats = useMemo(() => {
+    const amount = searchFilteredExpenses.reduce((sum, e) => sum + e.amount, 0);
 
     return {
-      totalAmount,
-      collegeExpenses,
-      departmentalExpenses,
-      maintenanceExpenses,
-      totalCount: searchFilteredExpenses.length,
+      pageAmount: amount,
+      pageCount: searchFilteredExpenses.length,
     };
   }, [searchFilteredExpenses]);
 
@@ -279,12 +261,13 @@ export const useExpensesData = () => {
     searchTerm,
     setSearchTerm,
     pagination,
+    totals, // GLOBAL totals (backend)
+    pageStats, 
     cacheAvailable,
     canCreate,
     canManage,
     canViewAll,
     admin,
-    stats,
     handleCreateExpense,
     handleDeleteExpense,
     handlePageChange,

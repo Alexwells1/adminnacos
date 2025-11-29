@@ -1,23 +1,37 @@
 // src/types/expense.types.ts
 
-// Department types - use codes (matching backend model)
 export type ExpenseDepartment = "COMSSA" | "ICITSA" | "CYDASA" | "SENIFSA";
 
-// Department names (for admin department field)
 export type AdminDepartment =
   | "Computer Science"
   | "ICT & Information Technology"
   | "Cybersecurity & Data Science"
   | "Software Engr & Information Systems";
 
+// =====================
+// New Stats Type
+// =====================
+export interface ExpenseStats {
+  totalCount: number;
+  totalAmount: number;
+
+  collegeCount: number;
+  collegeAmount: number;
+
+  departmentalCount: number;
+  departmentalAmount: number;
+
+  maintenanceCount: number;
+  maintenanceAmount: number;
+}
+
+// =====================
 export interface FinancialStats {
-  // Maintenance account
   totalMaintenance: number;
   maintenanceExpenses: number;
   availableMaintenance: number;
   executivePaymentsSkipped: number;
 
-  // Independent accounts
   accounts: {
     college_general: AccountBalance;
     dept_comssa: AccountBalance;
@@ -26,7 +40,6 @@ export interface FinancialStats {
     dept_senifsa: AccountBalance;
   };
 
-  // Summary fields
   totalCollegeRevenue: number;
   totalDepartmentalRevenue: number;
   totalRevenue: number;
@@ -47,23 +60,28 @@ export interface Expense {
   title: string;
   description: string;
   amount: number;
+
   paymentMethod: "maintenance_balance" | "available_balance";
+
   type: "college" | "departmental";
-  department?: ExpenseDepartment; // Use ExpenseDepartment here
+  department?: ExpenseDepartment;
+
   account:
     | "college_general"
     | "dept_comssa"
     | "dept_icitsa"
     | "dept_cydasa"
     | "dept_senifsa";
+
   date: string;
   createdBy: {
     _id: string;
     name: string;
     email: string;
     role: string;
-    department?: string;
+    department?: AdminDepartment;
   };
+
   createdAt: string;
   updatedAt: string;
 }
@@ -74,7 +92,7 @@ export interface CreateExpenseData {
   amount: number;
   paymentMethod: "maintenance_balance" | "available_balance";
   type: "college" | "departmental";
-  department?: ExpenseDepartment; // Use ExpenseDepartment here
+  department?: ExpenseDepartment;
   account:
     | "college_general"
     | "dept_comssa"
@@ -84,6 +102,7 @@ export interface CreateExpenseData {
   date?: string;
 }
 
+// Add stats
 export interface ExpensesResponse {
   expenses: Expense[];
   pagination: {
@@ -92,29 +111,21 @@ export interface ExpensesResponse {
     limit: number;
     totalPages: number;
   };
+  stats: ExpenseStats;
 }
 
-export interface PaginatedExpenses {
-  expenses: Expense[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+export type PaginatedExpenses = ExpensesResponse;
 
 export interface ExpenseFilters {
   page?: number;
   limit?: number;
   type?: "college" | "departmental";
-  department?: string;
-  paymentMethod?: string;
+  department?: ExpenseDepartment;
+  paymentMethod?: "maintenance_balance" | "available_balance";
   startDate?: string;
   endDate?: string;
 }
 
-// Account mapping for display
 export const ACCOUNT_DISPLAY_NAMES = {
   college_general: "College General Fund",
   dept_comssa: "COMSSA Department",
@@ -130,7 +141,6 @@ export const DEPARTMENT_DISPLAY_NAMES = {
   SENIFSA: "Software Engineering (SENIFSA)",
 } as const;
 
-// Department mapping constants (matching backend)
 export const DEPARTMENT_MAPPING = {
   "Computer Science": "COMSSA",
   "ICT & Information Technology": "ICITSA",

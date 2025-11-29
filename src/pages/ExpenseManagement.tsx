@@ -3,7 +3,6 @@ import { ExpenseForm } from "@/components/executives/ExpenseForm";
 import { ExpenseTable } from "@/components/executives/ExpenseTable";
 import { ExpenseTabs } from "@/components/executives/ExpenseTabs";
 import { ExpenseHeader } from "@/components/expense/ExpenseHeader";
-import { ExpenseStats } from "@/components/expense/ExpenseStats";
 import { useExpensesData } from "@/hooks/useExpensesData";
 import { useFinancialStats } from "@/hooks/useFinancialStats";
 import React, { useState } from "react";
@@ -26,7 +25,6 @@ export const ExpenseManagement: React.FC = () => {
     canManage,
     canViewAll,
     admin,
-    stats,
     handleCreateExpense,
     handleDeleteExpense,
     handlePageChange,
@@ -61,9 +59,6 @@ export const ExpenseManagement: React.FC = () => {
         loading={statsLoading}
         cacheAvailable={statsCacheAvailable}
       />
-
-      {/* Summary Stats */}
-      <ExpenseStats stats={stats} loading={loading} />
 
       {/* Expenses Table */}
       <ExpenseTable

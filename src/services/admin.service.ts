@@ -22,6 +22,8 @@ import type {
   CreateExecutiveData,
   CreateAdminData,
 } from "@/types/admin.types";
+import { Search } from "lucide-react";
+import { departments } from "@/constants/data";
 
 // Re-export types for convenience
 export type {
@@ -190,18 +192,27 @@ export const financialService = {
     return response.data;
   },
 
-  getExpenses: async (
-    page = 1,
-    limit = 10
-  ): Promise<PaginatedResponse<Expense>> => {
-    const response = await axios.get<PaginatedResponse<Expense>>(
-      "/admin/expenses",
-      {
-        params: { page, limit },
-      }
-    );
-    return response.data;
-  },
+getExpenses: async (
+  page = 1,
+  limit = 10,
+  search = "",
+  department?: string // make it optional
+): Promise<PaginatedResponse<Expense>> => {
+  const params: any = { page, limit };
+
+  if (search) params.search = search;
+  if (department) params.department = department;
+
+    console.log("🚀 [getExpenses] Sending request with params:", params);
+
+  const response = await axios.get<PaginatedResponse<Expense>>(
+    "/admin/expenses",
+    { params }
+  );
+
+  return response.data;
+},
+
 
   createExpense: async (
     expenseData: CreateExpenseData

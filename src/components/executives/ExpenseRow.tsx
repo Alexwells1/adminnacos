@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,45 +21,6 @@ import {
 import { MoreVertical, Trash2 } from "lucide-react";
 import type { Expense } from "@/types/expense.types";
 
-const ACCOUNT_CONFIG = {
-  college_general: {
-    name: "College General Fund",
-    icon: "Building",
-    description: "College dues and expenses",
-    color: "blue",
-  },
-  dept_comssa: {
-    name: "COMSSA Department",
-    icon: "Users",
-    description: "Computer Science department",
-    color: "green",
-  },
-  dept_icitsa: {
-    name: "ICITSA Department",
-    icon: "Users",
-    description: "Information Technology department",
-    color: "purple",
-  },
-  dept_cydasa: {
-    name: "CYDASA Department",
-    icon: "Shield",
-    description: "Cyber Security department",
-    color: "red",
-  },
-  dept_senifsa: {
-    name: "SENIFSA Department",
-    icon: "Users",
-    description: "Software Engineering department",
-    color: "orange",
-  },
-  maintenance: {
-    name: "Maintenance Fund",
-    icon: "Wallet",
-    description: "System maintenance expenses",
-    color: "gray",
-  },
-} as const;
-
 interface ExpenseRowProps {
   expense: Expense;
   onDelete: (id: string) => void;
@@ -67,7 +28,7 @@ interface ExpenseRowProps {
   deleting: string | null;
 }
 
-export const ExpenseRow: React.FC<ExpenseRowProps> = ({
+const ExpenseRowComponent: React.FC<ExpenseRowProps> = ({
   expense,
   onDelete,
   canManage,
@@ -75,43 +36,48 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
 }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const formatCurrency = (amount: number) => {
-    return `₦${amount.toLocaleString()}`;
-  };
+  const formattedAmount = useMemo(
+    () => `₦${expense.amount.toLocaleString()}`,
+    [expense.amount]
+  );
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  const formattedDate = useMemo(
+    () =>
+      new Date(expense.date).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }),
+    [expense.date]
+  );
 
-  const getPaymentMethodVariant = (method: string) => {
-    return method === "maintenance_balance" ? "destructive" : "default";
-  };
+  const typeVariant = useMemo(
+    () => (expense.type === "college" ? "default" : "secondary"),
+    [expense.type]
+  );
 
-  const getTypeVariant = (type: string) => {
-    return type === "college" ? "default" : "secondary";
-  };
+  const handleConfirmDelete = useCallback(() => {
+    onDelete(expense._id);
+  }, [expense._id, onDelete]);
 
   return (
     <>
       <TableRow>
         <TableCell>
-          <div>
-            <div className="font-medium">{expense.title}</div>
-            <div className="text-sm text-muted-foreground">
+          <div className="max-w-[250px] truncate">
+            <div className="font-medium truncate">{expense.title}</div>
+            <div className="text-sm text-muted-foreground truncate">
               {expense.description}
             </div>
           </div>
         </TableCell>
-        <TableCell className="font-medium">
-          {formatCurrency(expense.amount)}
-        </TableCell>
+
+        <TableCell className="font-medium">{formattedAmount}</TableCell>
+
         <TableCell>
-          <Badge variant={getTypeVariant(expense.type)}>{expense.type}</Badge>
+          <Badge variant={typeVariant}>{expense.type}</Badge>
         </TableCell>
+
         <TableCell>
           {expense.department ? (
             <Badge variant="outline">{expense.department}</Badge>
@@ -119,20 +85,9 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
             <span className="text-muted-foreground">-</span>
           )}
         </TableCell>
-        <TableCell>
-          <Badge variant="outline">
-            {ACCOUNT_CONFIG[expense.account]?.name}
-          </Badge>
-        </TableCell>
-        <TableCell>
-          <Badge variant={getPaymentMethodVariant(expense.paymentMethod)}>
-            {expense.paymentMethod
-              .split("_")
-              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(" ")}
-          </Badge>
-        </TableCell>
-        <TableCell>{formatDate(expense.date)}</TableCell>
+
+        <TableCell>{formattedDate}</TableCell>
+
         <TableCell>
           <div className="text-sm">
             <div>{expense.createdBy.name}</div>
@@ -141,6 +96,7 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
             </div>
           </div>
         </TableCell>
+
         <TableCell>
           {canManage && (
             <DropdownMenu>
@@ -163,19 +119,22 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
         </TableCell>
       </TableRow>
 
+      {/* DELETE CONFIRMATION */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Expense</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the expense "{expense.title}"?
-              This action cannot be undone.
+              Are you sure you want to delete "{expense.title}"? This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
+
             <AlertDialogAction
-              onClick={() => onDelete(expense._id)}
+              onClick={handleConfirmDelete}
               className="bg-red-600 hover:bg-red-700"
               disabled={deleting === expense._id}
             >
@@ -187,3 +146,6 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
     </>
   );
 };
+
+export const ExpenseRow = React.memo(ExpenseRowComponent);
+ExpenseRow.displayName = "ExpenseRow";

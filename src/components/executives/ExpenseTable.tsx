@@ -46,13 +46,15 @@ const getAvailableDepartments = (
   adminRole: string,
   adminDepartment?: string
 ) => {
-  const allDepartments = [
-    { value: "all", label: "All Departments" },
-    { value: "COMSSA", label: "Computer Science (COMSSA)" },
-    { value: "ICITSA", label: "Information Technology (ICITSA)" },
-    { value: "CYDASA", label: "Cyber Security (CYDASA)" },
-    { value: "SENIFSA", label: "Software Engineering (SENIFSA)" },
-  ];
+const allDepartments = [
+  { value: "all", label: "All Departments" },
+  { value: "college", label: "College Expenses" }, // new option
+  { value: "COMSSA", label: "Computer Science (COMSSA)" },
+  { value: "ICITSA", label: "Information Technology (ICITSA)" },
+  { value: "CYDASA", label: "Cyber Security (CYDASA)" },
+  { value: "SENIFSA", label: "Software Engineering (SENIFSA)" },
+];
+
 
   if (adminRole === "super_admin" || adminRole === "director_finance") {
     return allDepartments;
@@ -164,8 +166,6 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
                   <TableHead>Amount</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Department</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Payment Method</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Created By</TableHead>
                   <TableHead>Actions</TableHead>

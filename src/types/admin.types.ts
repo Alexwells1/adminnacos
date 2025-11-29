@@ -356,6 +356,8 @@ export interface AccountBalance {
 }
 
 export interface PaginatedResponse<T> {
+  totals: any;
+  stats: SetStateAction<{ totalCount: number; totalAmount: number; collegeCount: number; collegeAmount: number; departmentalCount: number; departmentalAmount: number; maintenanceCount: number; maintenanceAmount: number; }>;
   data?: T[];
   expenses?: T[];
   payments?: T[];
