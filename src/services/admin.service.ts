@@ -21,6 +21,10 @@ import type {
 
   CreateExecutiveData,
   CreateAdminData,
+  OutstandingFilters,
+  OutstandingPayment,
+  OutstandingSummary,
+  OutstandingPaymentsResponse,
 } from "@/types/admin.types";
 
 // Re-export types for convenience
@@ -367,6 +371,47 @@ export const downloadBlob = (blob: Blob, filename: string) => {
   window.URL.revokeObjectURL(url);
 };
 
+
+// Outstanding Payment Service
+export const outstandingPaymentService = {
+  // GET /admin/outstanding?page=1&limit=10&search=...
+  getOutstandingPayments: async (
+    filters: OutstandingFilters & { page?: number; limit?: number }
+  ) => {
+    const res = await axios.get<OutstandingPaymentsResponse>(
+      "/admin/outstanding",
+      { params: filters }
+    );
+    return res.data;
+  },
+
+  getSummary: async () => {
+    const res = await axios.get<{
+      message: string;
+      summary: OutstandingSummary;
+    }>("/admin/outstanding/summary");
+    return res.data.summary;
+  },
+
+  // GET /admin/outstanding/:id
+  getById: async (id: string): Promise<{ payment: OutstandingPayment }> => {
+    const response = await axios.get<{ payment: OutstandingPayment }>(
+      `/admin/outstanding/${id}`
+    );
+    return response.data;
+  },
+
+  // GET /admin/outstanding/export → blob
+  exportCSV: async (filters: OutstandingFilters) => {
+    const res = await axios.get("/admin/outstanding/export", {
+      params: filters,
+      responseType: "blob",
+    });
+    return res.data;
+  },
+};
+
+
 // Main admin service object
 const adminService = {
   auth: authService,
@@ -376,9 +421,11 @@ const adminService = {
   payments: paymentService,
   receipts: receiptService,
   executives: executiveService,
+  outstanding: outstandingPaymentService,
   utils: {
     downloadBlob,
   },
 };
+
 
 export default adminService;

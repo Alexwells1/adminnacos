@@ -13,6 +13,7 @@ import { CacheProvider } from "./contexts/useCache";
 import { useAuth } from "./contexts/useAuth";
 import { Toaster } from "sonner";
 import PublicStatistics from "./components/census/censusStats";
+import OutstandingPage from "./pages/outstanding/outstanding";
 
 // Route persistence component
 const RoutePersist: React.FC<{ children: React.ReactNode }> = ({
@@ -117,6 +118,15 @@ function App() {
               />
 
               <Route
+                path="/admin/OutstandingPage"
+                element={
+                  <ProtectedRoute>
+                    <OutstandingPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
                 path="/admin/expenses"
                 element={
                   <ProtectedRoute>
@@ -126,10 +136,9 @@ function App() {
               />
 
               <Route
-              path="/admin/census-stats"
-              element={
-                <PublicStatistics/>
-              }/>
+                path="/admin/census-stats"
+                element={<PublicStatistics />}
+              />
 
               {/* Add more routes as we build them */}
               <Route path="*" element={<Navigate to="/admin/dashboard" />} />

@@ -406,3 +406,52 @@ export type {
   FinancialStats as FinancialStatsInterface,
   DashboardStats as DashboardStatsInterface,
 };
+
+
+
+export interface OutstandingPayment {
+  _id: string;
+  fullName: string;
+  matricNumber: string;
+  email: string;
+  phoneNumber: string;
+  department: string;
+  missedSession: string;
+  missedLevel: string;
+  type: "outstanding";
+  amount: number;
+  reference: string;
+  paidAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+
+// types/admin.types.ts
+export interface OutstandingPaymentsResponse {
+  message: string;
+  data: OutstandingPayment[];
+  totalCount: number;      
+  totalAmount: number;      
+  pagination: {
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+
+export interface OutstandingFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  department?: string;
+  missedSession?: string;
+  missedLevel?: string;
+}
+
+
+export interface OutstandingSummary {
+  totalPayments: number;
+  totalAmount: number;
+}
