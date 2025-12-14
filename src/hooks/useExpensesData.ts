@@ -24,6 +24,7 @@ export const useExpensesData = () => {
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [cacheAvailable, setCacheAvailable] = useState(true);
+  const [editing, setEditing] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<ExpenseFilters>({
     page: 1,
@@ -56,104 +57,95 @@ export const useExpensesData = () => {
     "dept_admin",
   ]);
 
-
   const canManage = canCreate;
 
-  
   const canViewAll = isRole(["super_admin", "director_finance"]);
 
   // --------------------------------
   // LOAD EXPENSES + GLOBAL STATS
   // --------------------------------
 
-const loadExpenses = useCallback(
-  async (forceRefresh = false) => {
-    try {
-      setLoading(true);
+  const loadExpenses = useCallback(
+    async (forceRefresh = false) => {
+      try {
+        setLoading(true);
 
-      // ✅ Destructure all relevant fields at the start
-      const {
-        page: currentPage = 1,
-        limit: currentLimit = 10,
-        department,
-      } = filters;
+        // ✅ Destructure all relevant fields at the start
+        const {
+          page: currentPage = 1,
+          limit: currentLimit = 10,
+          department,
+        } = filters;
 
-      const filtersKey = JSON.stringify({
-        page: currentPage,
-        limit: currentLimit,
-        role: admin?.role,
-        dept: admin?.department,
-      });
-
-      const cacheKey = CACHE_KEYS.EXPENSES(
-        currentPage,
-        currentLimit,
-        filtersKey
-      );
-
-      if (!forceRefresh && cacheAvailable && isCacheValid(cacheKey)) {
-        const cached = getFromCache<{
-          expenses: Expense[];
-          pagination: any;
-          totals: any;
-        }>(cacheKey);
-
-        if (cached) {
-          setExpenses(cached.expenses);
-          setPagination(cached.pagination);
-          setTotals(cached.totals);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // 🔹 Pass the department directly from destructured filters
-      const response = await financialService.getExpenses(
-        currentPage,
-        currentLimit,
-        searchTerm,
-        department
-      );
-
-      setExpenses(response.expenses || []);
-      setTotals(response.totals || totals);
-
-      const paginationData = {
-        page: response.pagination.page,
-        limit: response.pagination.limit,
-        total: response.pagination.total,
-        totalPages: response.pagination.totalPages,
-      };
-
-      setPagination(paginationData);
-
-      if (cacheAvailable) {
-        const optimized = optimizeDataForCaching(response.expenses || []);
-        const saved = saveToCache(cacheKey, {
-          expenses: optimized,
-          pagination: paginationData,
-          totals: response.totals,
+        const filtersKey = JSON.stringify({
+          page: currentPage,
+          limit: currentLimit,
+          role: admin?.role,
+          dept: admin?.department,
         });
 
-        if (!saved) setCacheAvailable(false);
-      }
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Failed to load expenses";
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  },
-  [
-    filters, 
-    admin?.role,
-    admin?.department,
-    cacheAvailable,
-    searchTerm,
-  ]
-);
+        const cacheKey = CACHE_KEYS.EXPENSES(
+          currentPage,
+          currentLimit,
+          filtersKey
+        );
 
+        if (!forceRefresh && cacheAvailable && isCacheValid(cacheKey)) {
+          const cached = getFromCache<{
+            expenses: Expense[];
+            pagination: any;
+            totals: any;
+          }>(cacheKey);
+
+          if (cached) {
+            setExpenses(cached.expenses);
+            setPagination(cached.pagination);
+            setTotals(cached.totals);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // 🔹 Pass the department directly from destructured filters
+        const response = await financialService.getExpenses(
+          currentPage,
+          currentLimit,
+          searchTerm,
+          department
+        );
+
+        setExpenses(response.expenses || []);
+        setTotals(response.totals || totals);
+
+        const paginationData = {
+          page: response.pagination.page,
+          limit: response.pagination.limit,
+          total: response.pagination.total,
+          totalPages: response.pagination.totalPages,
+        };
+
+        setPagination(paginationData);
+
+        if (cacheAvailable) {
+          const optimized = optimizeDataForCaching(response.expenses || []);
+          const saved = saveToCache(cacheKey, {
+            expenses: optimized,
+            pagination: paginationData,
+            totals: response.totals,
+          });
+
+          if (!saved) setCacheAvailable(false);
+        }
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Failed to load expenses";
+        toast.error(message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [filters, admin?.role, admin?.department, cacheAvailable, searchTerm]
+  );
 
   // --------------------------------
   // CREATE EXPENSE
@@ -193,23 +185,47 @@ const loadExpenses = useCallback(
     }
   };
 
+  // --------------------------------
+  // UPDATE EXPENSE
+  // --------------------------------
+  const handleUpdateExpense = async (
+    id: string,
+    updates: {
+      title?: string;
+      description?: string;
+      amount?: number;
+    }
+  ) => {
+    try {
+      setEditing(id);
+      await financialService.updateExpense(id, updates);
+      clearExpensesCache();
+      await loadExpenses(true);
+      toast.success("Expense updated successfully!");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to update expense";
+      toast.error(message);
+    } finally {
+      setEditing(null);
+    }
+  };
+
   const handlePageChange = (newPage: number) => {
     setFilters((prev) => ({ ...prev, page: newPage }));
   };
 
-const handleFilterChange = (key: keyof ExpenseFilters, value: any) => {
-  setFilters((prev) => {
-    const updated = { ...prev, [key]: value, page: 1 };
-    console.log("🚀 [handleFilterChange] updated:", updated);
-    return updated;
-  });
-};
+  const handleFilterChange = (key: keyof ExpenseFilters, value: any) => {
+    setFilters((prev) => {
+      const updated = { ...prev, [key]: value, page: 1 };
+      console.log("🚀 [handleFilterChange] updated:", updated);
+      return updated;
+    });
+  };
 
-useEffect(() => {
-  loadExpenses(true); // force refresh whenever filters change
-}, [filters]);
-
-
+  useEffect(() => {
+    loadExpenses(true); // force refresh whenever filters change
+  }, [filters]);
 
   const handleRefresh = () => {
     setSearchTerm("");
@@ -222,19 +238,18 @@ useEffect(() => {
   // --------------------------------
   // SEARCH (LOCAL)
   // --------------------------------
-const searchFilteredExpenses = expenses;
+  const searchFilteredExpenses = expenses;
 
+  useEffect(() => {
+    // Reset to page 1 whenever the search term changes
+    setFilters((prev) => ({ ...prev, page: 1 }));
 
-useEffect(() => {
-  // Reset to page 1 whenever the search term changes
-  setFilters((prev) => ({ ...prev, page: 1 }));
+    const handler = setTimeout(() => {
+      loadExpenses(true); // force refresh
+    }, 500); // 500ms debounce
 
-  const handler = setTimeout(() => {
-    loadExpenses(true); // force refresh
-  }, 500); // 500ms debounce
-
-  return () => clearTimeout(handler);
-}, [searchTerm]);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   // --------------------------------
   // PAGE TOTALS (LOCAL ONLY)
@@ -262,7 +277,7 @@ useEffect(() => {
     setSearchTerm,
     pagination,
     totals, // GLOBAL totals (backend)
-    pageStats, 
+    pageStats,
     cacheAvailable,
     canCreate,
     canManage,
@@ -274,5 +289,7 @@ useEffect(() => {
     handleFilterChange,
     handleRefresh,
     loadExpenses,
+    handleUpdateExpense,
+    editing
   };
 };

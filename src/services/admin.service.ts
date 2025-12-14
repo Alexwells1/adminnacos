@@ -194,27 +194,26 @@ export const financialService = {
     return response.data;
   },
 
-getExpenses: async (
-  page = 1,
-  limit = 10,
-  search = "",
-  department?: string // make it optional
-): Promise<PaginatedResponse<Expense>> => {
-  const params: any = { page, limit };
+  getExpenses: async (
+    page = 1,
+    limit = 10,
+    search = "",
+    department?: string // make it optional
+  ): Promise<PaginatedResponse<Expense>> => {
+    const params: any = { page, limit };
 
-  if (search) params.search = search;
-  if (department) params.department = department;
+    if (search) params.search = search;
+    if (department) params.department = department;
 
     console.log("🚀 [getExpenses] Sending request with params:", params);
 
-  const response = await axios.get<PaginatedResponse<Expense>>(
-    "/admin/expenses",
-    { params }
-  );
+    const response = await axios.get<PaginatedResponse<Expense>>(
+      "/admin/expenses",
+      { params }
+    );
 
-  return response.data;
-},
-
+    return response.data;
+  },
 
   createExpense: async (
     expenseData: CreateExpenseData
@@ -230,6 +229,22 @@ getExpenses: async (
     const response = await axios.delete<{ message: string }>(
       `/admin/expenses/${id}`
     );
+    return response.data;
+  },
+
+  updateExpense: async (
+    id: string,
+    updates: {
+      title?: string;
+      description?: string;
+      amount?: number;
+    }
+  ): Promise<{ message: string; expense: Expense }> => {
+    const response = await axios.put<{
+      message: string;
+      expense: Expense;
+    }>(`/admin/expenses/${id}`, updates);
+
     return response.data;
   },
 };

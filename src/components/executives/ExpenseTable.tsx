@@ -40,6 +40,7 @@ interface ExpenseTableProps {
   onDeleteExpense: (id: string) => void;
   onPageChange: (page: number) => void;
   onFilterChange: (key: keyof ExpenseFilters, value: any) => void;
+  onEditExpense: (expense: Expense) => void;
 }
 
 const getAvailableDepartments = (
@@ -90,6 +91,7 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
   onDeleteExpense,
   onPageChange,
   onFilterChange,
+  onEditExpense,
 }) => {
   const availableDepartments = getAvailableDepartments(
     admin?.role || "",
@@ -164,21 +166,28 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
                 <TableRow>
                   <TableHead>Expense Details</TableHead>
                   <TableHead>Amount</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Department</TableHead>
+                  {admin?.role === "super_admin" && <TableHead>Type</TableHead>}
+                  {admin?.role === "super_admin" && (
+                    <TableHead>Department</TableHead>
+                  )}
                   <TableHead>Date</TableHead>
-                  <TableHead>Created By</TableHead>
+                  {admin?.role === "super_admin" && (
+                    <TableHead>Created By</TableHead>
+                  )}
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {expenses.map((expense) => (
                   <ExpenseRow
                     key={expense._id}
                     expense={expense}
                     onDelete={onDeleteExpense}
+                    onEdit={onEditExpense}
                     canManage={canManage}
                     deleting={deleting}
+                    adminRole={admin?.role}
                   />
                 ))}
               </TableBody>

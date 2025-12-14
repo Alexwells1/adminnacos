@@ -18,21 +18,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreVertical, Trash2 } from "lucide-react";
+import { MoreVertical, Trash2, Pencil } from "lucide-react";
 import type { Expense } from "@/types/expense.types";
 
 interface ExpenseRowProps {
   expense: Expense;
-  onDelete: (id: string) => void;
   canManage: boolean;
   deleting: string | null;
+  onDelete: (id: string) => void;
+  onEdit: (expense: Expense) => void;
+  adminRole?: string; // <-- new
 }
+
 
 const ExpenseRowComponent: React.FC<ExpenseRowProps> = ({
   expense,
   onDelete,
+  onEdit,
   canManage,
   deleting,
+  adminRole,
 }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -60,6 +65,10 @@ const ExpenseRowComponent: React.FC<ExpenseRowProps> = ({
     onDelete(expense._id);
   }, [expense._id, onDelete]);
 
+  const handleEdit = useCallback(() => {
+    onEdit(expense);
+  }, [expense, onEdit]);
+
   return (
     <>
       <TableRow>
@@ -74,28 +83,34 @@ const ExpenseRowComponent: React.FC<ExpenseRowProps> = ({
 
         <TableCell className="font-medium">{formattedAmount}</TableCell>
 
-        <TableCell>
-          <Badge variant={typeVariant}>{expense.type}</Badge>
-        </TableCell>
+        {adminRole === "super_admin" && (
+          <TableCell>
+            <Badge variant={typeVariant}>{expense.type}</Badge>
+          </TableCell>
+        )}
 
-        <TableCell>
-          {expense.department ? (
-            <Badge variant="outline">{expense.department}</Badge>
-          ) : (
-            <span className="text-muted-foreground">-</span>
-          )}
-        </TableCell>
+        {adminRole === "super_admin" && (
+          <TableCell>
+            {expense.department ? (
+              <Badge variant="outline">{expense.department}</Badge>
+            ) : (
+              <span className="text-muted-foreground">-</span>
+            )}
+          </TableCell>
+        )}
 
         <TableCell>{formattedDate}</TableCell>
 
-        <TableCell>
-          <div className="text-sm">
-            <div>{expense.createdBy.name}</div>
-            <div className="text-muted-foreground">
-              {expense.createdBy.role}
+        {adminRole === "super_admin" && (
+          <TableCell>
+            <div className="text-sm">
+              <div>{expense.createdBy.name}</div>
+              <div className="text-muted-foreground">
+                {expense.createdBy.role}
+              </div>
             </div>
-          </div>
-        </TableCell>
+          </TableCell>
+        )}
 
         <TableCell>
           {canManage && (
@@ -105,7 +120,15 @@ const ExpenseRowComponent: React.FC<ExpenseRowProps> = ({
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent align="end">
+                {/* EDIT */}
+                <DropdownMenuItem onClick={handleEdit}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+
+                {/* DELETE */}
                 <DropdownMenuItem
                   className="text-red-600"
                   onClick={() => setShowDeleteDialog(true)}

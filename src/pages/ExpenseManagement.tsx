@@ -2,9 +2,11 @@
 import { ExpenseForm } from "@/components/executives/ExpenseForm";
 import { ExpenseTable } from "@/components/executives/ExpenseTable";
 import { ExpenseTabs } from "@/components/executives/ExpenseTabs";
+import { EditExpenseModal } from "@/components/expense/EditExpenseModal";
 import { ExpenseHeader } from "@/components/expense/ExpenseHeader";
 import { useExpensesData } from "@/hooks/useExpensesData";
 import { useFinancialStats } from "@/hooks/useFinancialStats";
+import type { Expense } from "@/types/expense.types";
 import React, { useState } from "react";
 
 
@@ -30,7 +32,18 @@ export const ExpenseManagement: React.FC = () => {
     handlePageChange,
     handleFilterChange,
     handleRefresh,
+    handleUpdateExpense,
+    editing,
   } = useExpensesData();
+
+
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const handleEditClick = (expense: Expense) => {
+    setSelectedExpense(expense);
+    setEditOpen(true);
+  };
 
   const {
     financialStats,
@@ -75,6 +88,7 @@ export const ExpenseManagement: React.FC = () => {
         onDeleteExpense={handleDeleteExpense}
         onPageChange={handlePageChange}
         onFilterChange={handleFilterChange}
+        onEditExpense={handleEditClick}
       />
 
       {/* Create Expense Form Modal */}
@@ -86,6 +100,17 @@ export const ExpenseManagement: React.FC = () => {
         adminRole={admin?.role || ""}
         adminDepartment={admin?.department}
         financialStats={financialStats}
+      />
+
+      <EditExpenseModal
+        open={editOpen}
+        expense={selectedExpense}
+        loading={editing === selectedExpense?._id}
+        onClose={() => setEditOpen(false)}
+        onSubmit={(updates) => {
+          handleUpdateExpense(selectedExpense!._id, updates);
+          setEditOpen(false);
+        }}
       />
     </div>
   );
