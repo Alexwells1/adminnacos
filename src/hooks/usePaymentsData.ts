@@ -1,13 +1,10 @@
 // src/hooks/usePaymentsData.ts
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { paymentService } from "@/services/admin.service";
 import type {
-  Payment,
-  PaymentDepartment,
-  PaymentTypeEnum,
+  Payment
 } from "@/types/admin.types";
-import { usePaymentsCache } from "./usePaymentsCache";
 import { useAuth } from "@/contexts/useAuth";
 
 const useDebounce = (value: any, delay: number) => {
@@ -21,10 +18,9 @@ const useDebounce = (value: any, delay: number) => {
 
 export const usePaymentsData = () => {
   const { admin, hasPermission } = useAuth();
-  const { clearPaymentsCache } = usePaymentsCache();
-  const [isExporting, setIsExporting] = useState(false);
 
-  const [loading, setLoading] = useState(true);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadTime, setLoadTime] = useState<number>(0);
@@ -32,10 +28,6 @@ export const usePaymentsData = () => {
   const [cacheStatus, setCacheStatus] = useState<"fresh" | "stale" | "none">(
     "none"
   );
-  const [currentPagePayments, setCurrentPagePayments] = useState<Payment[]>([]);
-
-  const [allPaymentsCache, setAllPaymentsCache] = useState<Payment[]>([]);
-  const [isPrefetching, setIsPrefetching] = useState(false);
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -65,103 +57,60 @@ export const usePaymentsData = () => {
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const debouncedFilters = useDebounce(filters, 500);
 
-const prefetchAllPayments = useCallback(
-  async (total: number) => {
-    try {
-      setIsPrefetching(true);
+  const [isExporting, setIsExporting] = useState(false);
 
-      const PREFETCH_LIMIT = 400;
-      const totalPages = Math.ceil(total / PREFETCH_LIMIT);
+  /** Cache per page + filters + search */
+  const pageCache = useRef<Record<string, Payment[]>>({});
 
-      console.log(`Prefetch started: total=${total}, pages=${totalPages}`);
+  const makeCacheKey = (page: number) =>
+    JSON.stringify({
+      page,
+      limit: pagination.limit,
+      filters: debouncedFilters,
+      search: debouncedSearchQuery,
+    });
 
-      for (let page = 1; page <= totalPages; page++) {
-        let type: PaymentTypeEnum | undefined;
-        if (filters.type !== "all") type = filters.type as PaymentTypeEnum;
-
-        let department: PaymentDepartment | undefined;
-        if (filters.department !== "all")
-          department = filters.department as PaymentDepartment;
-
-        console.log(`Prefetch page ${page}...`);
-
-        const res = await paymentService.getPayments({
-          page,
-          limit: PREFETCH_LIMIT,
-          ...(type && { type }),
-          ...(department && { department }),
-          ...(filters.level && { level: filters.level }),
-          ...(filters.startDate && { startDate: filters.startDate }),
-          ...(filters.endDate && { endDate: filters.endDate }),
-        });
-
-        console.log(
-          `Page ${page} loaded, payments: ${res.payments?.length ?? 0}`
-        );
-
-        // Incrementally update cache
-        setAllPaymentsCache((prev) => [...prev, ...(res.payments ?? [])]);
-      }
-    } catch (e) {
-      console.error("Prefetch failed:", e);
-    } finally {
-      setIsPrefetching(false);
-    }
-  },
-  [filters]
-);
-
-
-  // =========================
-  // LOAD PAYMENTS
-  // =========================
+  /** Load payments (server-side pagination) */
   const loadPayments = useCallback(
     async (isSearch = false, pageOverride?: number, search?: string) => {
       const pageToLoad = pageOverride || pagination.page;
+      const cacheKey = makeCacheKey(pageToLoad);
 
-      const dataSource = allPaymentsCache.length > 0 ? allPaymentsCache : null;
-
-      // If cached AND not searching, just use cache
-      if (dataSource && !search) {
-        console.log(
-          `Loading page ${pageToLoad} from cache, total cached: ${dataSource.length}`
-        );
-        setCurrentPagePayments(
-          dataSource.slice(
-            (pageToLoad - 1) * pagination.limit,
-            pageToLoad * pagination.limit
-          )
-        );
+      if (pageCache.current[cacheKey]) {
+        setPayments(pageCache.current[cacheKey]);
         setCacheStatus("fresh");
         return;
       }
 
-      // Otherwise fallback to fetching
       if (!isSearch) setLoading(true);
       if (isSearch) setSearchLoading(true);
       setCacheStatus("none");
       setProgress(10);
 
       const startTime = Date.now();
-      const params: any = {
-        page: pageToLoad.toString(),
-        limit: pagination.limit.toString(),
-      };
-      if (filters.type !== "all") params.type = filters.type;
-      if (filters.department !== "all") params.department = filters.department;
-      if (filters.level !== "all") params.level = filters.level;
-      if (filters.startDate) params.startDate = filters.startDate;
-      if (filters.endDate) params.endDate = filters.endDate;
-      if (search) params.search = search;
 
       try {
+        const params: any = {
+          page: pageToLoad,
+          limit: pagination.limit,
+        };
+        if (filters.type !== "all") params.type = filters.type;
+        if (filters.department !== "all")
+          params.department = filters.department;
+        if (filters.level !== "all") params.level = filters.level;
+        if (filters.startDate) params.startDate = filters.startDate;
+        if (filters.endDate) params.endDate = filters.endDate;
+        if (search) params.search = search;
+
+        setProgress(30);
         const response = await paymentService.getPayments(params);
         setProgress(60);
 
         const { payments: paymentsData = [], pagination: serverPagination } =
           response;
 
-        setCurrentPagePayments(paymentsData);
+        pageCache.current[cacheKey] = paymentsData;
+        setPayments(paymentsData);
 
         setPagination((prev) => ({
           page: serverPagination?.page ?? prev.page,
@@ -170,21 +119,8 @@ const prefetchAllPayments = useCallback(
           totalPages: serverPagination?.totalPages ?? 1,
         }));
 
-        const isSearching = Boolean(search && search.trim());
-
-        if (
-          pageToLoad === 1 &&
-          !isSearching &&
-          serverPagination?.total &&
-          allPaymentsCache.length === 0
-        ) {
-          console.log("Starting prefetch...");
-          prefetchAllPayments(serverPagination.total);
-        }
-
-        setProgress(90);
-        setCacheStatus("fresh");
         setLoadTime(Date.now() - startTime);
+        setCacheStatus("fresh");
         setProgress(100);
       } catch (error: any) {
         toast.error(
@@ -197,69 +133,48 @@ const prefetchAllPayments = useCallback(
         setTimeout(() => setProgress(0), 500);
       }
     },
-    [
-      filters,
-      pagination.limit,
-      pagination.page,
-      allPaymentsCache,
-      prefetchAllPayments,
-    ]
+    [debouncedFilters, debouncedSearchQuery, pagination.limit, filters]
   );
 
-  // =========================
-  // HANDLE SEARCH
-  // =========================
+  /** Handle search input */
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
   }, []);
 
-  // =========================
-  // HANDLE REFRESH
-  // =========================
+  /** Refresh payments */
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     setSearchQuery("");
-    clearPaymentsCache();
-    setAllPaymentsCache([]);
-
+    pageCache.current = {};
     setPagination((prev) => ({ ...prev, page: 1 }));
     await loadPayments(false, 1);
     setRefreshing(false);
     toast.info("Payments cache cleared and refreshed.");
-  }, [clearPaymentsCache, loadPayments]);
+  }, [loadPayments]);
 
-  // =========================
-  // HANDLE PAGE CHANGE
-  // =========================
+  /** Handle page change */
   const handlePageChange = useCallback(
-    (newPage: number) => {
-      setPagination((prev) => ({ ...prev, page: newPage }));
-    },
-    [setPagination]
+    (newPage: number) => setPagination((prev) => ({ ...prev, page: newPage })),
+    []
   );
 
-  // =========================
-  // HANDLE PAYMENT CREATED
-  // =========================
+  /** Handle payment created */
   const handlePaymentCreated = useCallback(async () => {
     setRefreshing(true);
     setSearchQuery("");
-    clearPaymentsCache();
-    setAllPaymentsCache([]);
-
+    pageCache.current = {};
     setPagination((prev) => ({ ...prev, page: 1 }));
     await loadPayments(false, 1);
     setRefreshing(false);
     toast.success("Payment created successfully. Cache cleared.");
-  }, [clearPaymentsCache, loadPayments]);
+  }, [loadPayments]);
 
-  const exportCSV = async () => {
+  /** Export CSV */
+  const exportCSV = useCallback(async () => {
     const params: any = {};
-
     try {
       setIsExporting(true);
 
-      // Build query params from filters
       if (filters.type !== "all") params.type = filters.type;
       if (filters.department !== "all") params.department = filters.department;
       if (filters.level !== "all") params.level = filters.level;
@@ -267,19 +182,14 @@ const prefetchAllPayments = useCallback(
       if (filters.endDate) params.endDate = filters.endDate;
       if (searchQuery.trim()) params.search = searchQuery.trim();
 
-      // Call backend
       const fileBlob = await paymentService.exportPaymentsCSV(params);
-      let name = filters.type;
-      if (filters.type == "college") name = "NACOS";
 
-      // Download file
+      const name = filters.type === "college" ? "NACOS" : filters.type;
       const url = window.URL.createObjectURL(fileBlob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `${name}_${filters.department}_payments.csv`;
       a.click();
-
-      // Cleanup
       window.URL.revokeObjectURL(url);
 
       toast.success("CSV exported successfully!");
@@ -291,36 +201,26 @@ const prefetchAllPayments = useCallback(
     } finally {
       setIsExporting(false);
     }
-  };
+  }, [filters, searchQuery]);
 
-  const dataSource =
-    allPaymentsCache.length > 0 ? allPaymentsCache : currentPagePayments;
+  /** Reset cache on filter/search change */
+  useEffect(() => {
+    pageCache.current = {};
+    setPagination((p) => ({ ...p, page: 1 }));
+  }, [debouncedFilters, debouncedSearchQuery]);
 
-  const start = (pagination.page - 1) * pagination.limit;
-  const end = start + pagination.limit;
-
-  const paginatedPayments = dataSource.slice(start, end);
-
-  // =========================
-  // EFFECTS
-  // =========================
+  /** Load payments on page change */
   useEffect(() => {
     loadPayments(
       Boolean(debouncedSearchQuery),
       pagination.page,
       debouncedSearchQuery
     );
-  }, [debouncedSearchQuery, debouncedFilters, pagination.page, loadPayments]);
-
-  useEffect(() => {
-    setAllPaymentsCache([]);
-    setPagination((prev) => (prev.page === 1 ? prev : { ...prev, page: 1 }));
-  }, [debouncedFilters, debouncedSearchQuery]);
+  }, [pagination.page, debouncedSearchQuery, loadPayments]);
 
   return {
-    payments: paginatedPayments,
+    payments,
     loading,
-    isPrefetching,
     searchLoading,
     refreshing,
     loadTime,
@@ -335,9 +235,9 @@ const prefetchAllPayments = useCallback(
     handlePageChange,
     handleRefresh,
     handlePaymentCreated,
-    hasPermission,
-    admin,
     exportCSV,
     isExporting,
+    hasPermission,
+    admin,
   };
 };
